@@ -1,0 +1,7 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.section { margin-bottom: 24px; }
+.sectionTitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; }
+.tokenStatus { font-size: 0.9rem; margin-bottom: 12px; padding: 8px 12px; border-radius: 6px;
+  &.saved { background: #d4edda; color: #155724; }
+  &.none { background: #f8d7da; color: #721c24; }
+}

@@ -1,0 +1,15 @@
+.header {
+  background: #fff;
+  border-bottom: 1px solid #dfe6e9;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+.nav { display: flex; gap: 20px; }
+.link { font-weight: 500; font-size: 0.95rem; color: #2d3436; &:hover { color: #2e75b6; text-decoration: none; } }
+.userInfo { display: flex; align-items: center; gap: 12px; }
+.name { font-weight: 500; font-size: 0.9rem; }
+.role { font-size: 0.8rem; color: #636e72; background: #f0f3f7; padding: 2px 8px; border-radius: 10px; }
+.logoutBtn { background: none; border: 1px solid #dfe6e9; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; &:hover { background: #f5f6fa; } }

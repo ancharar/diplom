@@ -1,0 +1,11 @@
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.projectCard {
+  background: #fff; border-radius: 8px; padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer;
+  transition: box-shadow 0.2s;
+  &:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); }
+}
+.projectTitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+.projectMeta { font-size: 0.85rem; color: #636e72; }
+.projectArea { display: inline-block; background: #dfe6f6; color: #2e75b6; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; margin-top: 8px; }

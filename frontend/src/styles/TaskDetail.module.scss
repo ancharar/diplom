@@ -1,0 +1,10 @@
+.grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.field { margin-bottom: 14px; }
+.fieldLabel { font-size: 0.8rem; color: #636e72; text-transform: uppercase; margin-bottom: 4px; }
+.transitions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.historyItem {
+  padding: 10px 0; border-bottom: 1px solid #f0f3f7; font-size: 0.85rem;
+  .date { color: #636e72; font-size: 0.8rem; }
+  .change { margin-top: 2px; }
+  .arrow { color: #2e75b6; margin: 0 4px; }
+}
