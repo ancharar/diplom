@@ -62,6 +62,58 @@ export interface HistoryEntry {
   changed_at: string;
 }
 
+export interface LiteratureSource {
+  id: string;
+  project_id: number;
+  title: string;
+  authors: string;
+  year: number | null;
+  url: string;
+  description: string;
+  tags: string[];
+  added_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectFile {
+  id: string;
+  project_id: number;
+  filename: string;
+  content_type: string;
+  size: number;
+  description: string;
+  uploaded_by: number;
+  uploaded_at: string;
+}
+
+export interface ProjectCatalog {
+  id: number;
+  title: string;
+  description: string;
+  goal: string;
+  area: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  members_count: number;
+  is_member: boolean;
+  has_pending_request: boolean;
+}
+
+export interface JoinRequest {
+  id: number;
+  user: User;
+  project: number;
+  desired_role: string;
+  assigned_role: string | null;
+  message: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by: User | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
 export interface VKPublication {
   id: number;
   project: number;

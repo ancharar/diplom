@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Project, ProjectHistory, ProjectMembership
+from .models import JoinRequest, Project, ProjectHistory, ProjectMembership
 
 
 class ProjectMembershipInline(admin.TabularInline):
@@ -29,3 +29,11 @@ class ProjectHistoryAdmin(admin.ModelAdmin):
     list_display = ('project', 'changed_by', 'field_name', 'changed_at')
     list_filter = ('field_name',)
     readonly_fields = ('project', 'changed_by', 'field_name', 'old_value', 'new_value', 'changed_at')
+
+
+@admin.register(JoinRequest)
+class JoinRequestAdmin(admin.ModelAdmin):
+    """Админ-панель для заявок на вступление."""
+
+    list_display = ('user', 'project', 'desired_role', 'status', 'created_at')
+    list_filter = ('status',)

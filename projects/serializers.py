@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from users.serializers import UserSerializer
 
-from .models import Project, ProjectHistory, ProjectMembership
+from .models import JoinRequest, Project, ProjectHistory, ProjectMembership
 
 
 class ProjectMembershipSerializer(serializers.ModelSerializer):
@@ -32,6 +32,38 @@ class ProjectSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'owner', 'created_at', 'updated_at')
+
+
+class ProjectCatalogSerializer(serializers.ModelSerializer):
+    """Облегчённый сериализатор для каталога проектов."""
+
+    members_count = serializers.SerializerMethodField()
+    is_member = serializers.SerializerMethodField()
+    has_pending_request = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = (
+            'id', 'title', 'description', 'goal', 'area', 'status',
+            'start_date', 'end_date',
+            'members_count', 'is_member', 'has_pending_request',
+        )
+
+    def get_members_count(self, obj: Project) -> int:
+        return obj.memberships.count()
+
+    def get_is_member(self, obj: Project) -> bool:
+        user = self.context['request'].user
+        return (
+            obj.owner_id == user.id
+            or obj.memberships.filter(user=user).exists()
+        )
+
+    def get_has_pending_request(self, obj: Project) -> bool:
+        user = self.context['request'].user
+        return obj.join_requests.filter(
+            user=user, status='pending',
+        ).exists()
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):
@@ -85,3 +117,42 @@ class ProjectHistorySerializer(serializers.ModelSerializer):
         model = ProjectHistory
         fields = ('id', 'field_name', 'old_value', 'new_value', 'changed_by', 'changed_at')
         read_only_fields = fields
+
+
+class JoinRequestCreateSerializer(serializers.Serializer):
+    """Сериализатор для создания заявки на вступление."""
+
+    desired_role = serializers.ChoiceField(
+        choices=ProjectMembership.PROJECT_ROLE_CHOICES,
+    )
+    message = serializers.CharField(
+        required=False, allow_blank=True, default='',
+    )
+
+
+class JoinRequestSerializer(serializers.ModelSerializer):
+    """Сериализатор заявки на вступление."""
+
+    user = UserSerializer(read_only=True)
+    reviewed_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = JoinRequest
+        fields = (
+            'id', 'user', 'project', 'desired_role',
+            'assigned_role', 'message', 'status',
+            'reviewed_by', 'reviewed_at', 'created_at',
+        )
+        read_only_fields = fields
+
+
+class JoinRequestReviewSerializer(serializers.Serializer):
+    """Сериализатор для рассмотрения заявки."""
+
+    action = serializers.ChoiceField(
+        choices=[('approved', 'Одобрить'), ('rejected', 'Отклонить')],
+    )
+    assigned_role = serializers.ChoiceField(
+        choices=ProjectMembership.PROJECT_ROLE_CHOICES,
+        required=False,
+    )

@@ -9,3 +9,20 @@
 .projectTitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
 .projectMeta { font-size: 0.85rem; color: #636e72; }
 .projectArea { display: inline-block; background: #dfe6f6; color: #2e75b6; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; margin-top: 8px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #dfe6e9; }
+.tab {
+  padding: 8px 20px; border: none; background: none; cursor: pointer;
+  font-size: 0.95rem; color: #636e72; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  &:hover { color: #2d3436; }
+}
+.tabActive { color: #2e75b6; border-bottom-color: #2e75b6; font-weight: 600; }
+
+.badgeMember {
+  display: inline-block; background: #00b894; color: #fff;
+  padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;
+}
+.badgePending {
+  display: inline-block; background: #b2bec3; color: #fff;
+  padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;
+}
