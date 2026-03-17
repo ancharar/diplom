@@ -23,6 +23,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
     <header className={styles.header}>
       <nav className={styles.nav}>
         <Link to="/projects" className={styles.link}>Проекты</Link>
+        <Link to="/my-requests" className={styles.link}>Мои заявки</Link>
         <Link to="/vk" className={styles.link}>VK-публикации</Link>
       </nav>
       <div className={styles.userInfo}>

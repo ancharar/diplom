@@ -105,3 +105,72 @@ class ProjectHistory(models.Model):
 
     def __str__(self) -> str:
         return f'{self.project}: {self.field_name} изменено {self.changed_by}'
+
+
+class JoinRequest(models.Model):
+    """Заявка на вступление в проект."""
+
+    STATUS_CHOICES = [
+        ('pending', 'На рассмотрении'),
+        ('approved', 'Одобрена'),
+        ('rejected', 'Отклонена'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='join_requests',
+        verbose_name='Пользователь',
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='join_requests',
+        verbose_name='Проект',
+    )
+    desired_role = models.CharField(
+        'Желаемая роль',
+        max_length=20,
+        choices=ProjectMembership.PROJECT_ROLE_CHOICES,
+    )
+    assigned_role = models.CharField(
+        'Назначенная роль',
+        max_length=20,
+        choices=ProjectMembership.PROJECT_ROLE_CHOICES,
+        null=True,
+        blank=True,
+    )
+    message = models.TextField('Сопроводительное сообщение', blank=True)
+    status = models.CharField(
+        'Статус',
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_requests',
+        verbose_name='Кто рассмотрел',
+    )
+    reviewed_at = models.DateTimeField(
+        'Дата рассмотрения', null=True, blank=True,
+    )
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Заявка на вступление'
+        verbose_name_plural = 'Заявки на вступление'
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'project'],
+                condition=models.Q(status='pending'),
+                name='unique_pending_request_per_user_project',
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.user} → {self.project} ({self.get_status_display()})'

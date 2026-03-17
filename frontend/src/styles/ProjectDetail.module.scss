@@ -11,3 +11,7 @@
   display: flex; align-items: center; gap: 6px;
 }
 .removeBtn { background: none; border: none; color: #d63031; cursor: pointer; font-size: 1rem; }
+.badgePending {
+  display: inline-block; background: #b2bec3; color: #fff;
+  padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;
+}

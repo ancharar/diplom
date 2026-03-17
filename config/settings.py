@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'projects.apps.ProjectsConfig',
     'tasks.apps.TasksConfig',
     'vk_integration.apps.VkIntegrationConfig',
+    'literature.apps.LiteratureConfig',
 ]
 
 MIDDLEWARE = [
@@ -125,6 +126,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 
+# ─── MongoDB ─────────────────────────────────────────────────────────────────
+
+MONGO_HOST = os.getenv('MONGO_HOST', 'localhost')
+MONGO_PORT = int(os.getenv('MONGO_PORT', '27017'))
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'scientific_pm_docs')
+
+
 # ─── Django REST Framework ────────────────────────────────────────────────────
 
 REST_FRAMEWORK = {
@@ -139,9 +147,10 @@ REST_FRAMEWORK = {
     # Пагинация
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    # Парсеры и рендереры — только JSON
+    # Парсеры
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',

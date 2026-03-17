@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/v1/projects/<int:project_id>/tasks/', ProjectTaskListCreateView.as_view(), name='project-tasks'),
     path('api/v1/tasks/', include('tasks.urls')),
     path('api/v1/vk/', include('vk_integration.urls')),
+    path('api/v1/projects/<int:project_id>/literature/', include('literature.urls')),
 
     # OpenAPI-схема и Swagger UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

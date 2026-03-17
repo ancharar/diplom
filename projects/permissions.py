@@ -24,3 +24,14 @@ class IsProjectMember(BasePermission):
         return ProjectMembership.objects.filter(
             user=request.user, project=obj
         ).exists()
+
+
+class IsProjectAdmin(BasePermission):
+    """Владелец проекта (администратор проекта)."""
+
+    message = 'Только владелец проекта может выполнить это действие.'
+
+    def has_object_permission(self, request: Request, view, obj) -> bool:
+        from .models import Project
+        project = obj if isinstance(obj, Project) else obj.project
+        return project.owner == request.user
