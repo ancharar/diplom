@@ -26,7 +26,7 @@ class UserRegistrationTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('tokens', response.data)
         self.assertIn('access', response.data['tokens'])
-        self.assertEqual(response.data['user']['role'], 'member')
+        # ROLE_DISABLED: self.assertEqual(response.data['user']['role'], 'member')
 
     def test_register_duplicate_email(self):
         """Повторная регистрация с тем же email возвращает 400."""

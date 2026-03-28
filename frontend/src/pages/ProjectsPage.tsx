@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import Loader from '../components/Loader';
 import JoinRequestModal from '../components/JoinRequestModal';
+import { useToast } from '../contexts/ToastContext';
+import { getErrorMessage } from '../utils/errorMessages';
 import type { Project, ProjectCatalog, User } from '../types';
 import styles from '../styles/Projects.module.scss';
 
@@ -10,8 +12,10 @@ interface ProjectsPageProps {
   user: User | null;
 }
 
-export default function ProjectsPage({ user }: ProjectsPageProps) {
+// ROLE_DISABLED: user prop сохранён для совместимости, но не используется
+export default function ProjectsPage({ user: _user }: ProjectsPageProps) {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   const [tab, setTab] = useState<'my' | 'catalog'>('my');
   const [projects, setProjects] = useState<Project[]>([]);
   const [catalog, setCatalog] = useState<ProjectCatalog[]>([]);
@@ -51,11 +55,12 @@ export default function ProjectsPage({ user }: ProjectsPageProps) {
       await client.post('/projects/', form);
       setShowForm(false);
       setForm({ title: '', area: '', description: '', goal: '', start_date: '', end_date: '' });
+      showSuccess('Проект создан');
       fetchProjects();
       fetchCatalog();
     } catch (err) {
-      const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
-      setError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка создания');
+      showError(getErrorMessage(err));
+      setError(getErrorMessage(err));
     }
   };
 
@@ -77,7 +82,8 @@ export default function ProjectsPage({ user }: ProjectsPageProps) {
     <div className="container">
       <div className={styles.header}>
         <h1 className="page-title">Проекты</h1>
-        {user?.role === 'admin' && tab === 'my' && (
+        {/* ROLE_DISABLED: теперь любой пользователь может создать проект */}
+        {tab === 'my' && (
           <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
             {showForm ? 'Отмена' : 'Создать проект'}
           </button>

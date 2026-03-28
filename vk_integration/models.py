@@ -51,8 +51,29 @@ class VKPublication(models.Model):
     content = models.TextField('Текст статьи')
     vk_post_id = models.BigIntegerField('ID поста в VK', null=True, blank=True)
     owner_id = models.BigIntegerField('ID стены (пользователя или группы)')
-    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='draft')
-    published_at = models.DateTimeField('Дата публикации', null=True, blank=True)
+    attachment_type = models.CharField(
+        'Тип вложения', max_length=20,
+        choices=[
+            ('none', 'Без вложения'),
+            ('photo', 'Фото'),
+            ('doc', 'Документ'),
+        ],
+        default='none',
+    )
+    attachment_file = models.FileField(
+        upload_to='vk_attachments/',
+        null=True, blank=True,
+    )
+    vk_attachment_id = models.CharField(
+        'ID вложения в VK', max_length=255, blank=True,
+    )
+    status = models.CharField(
+        'Статус', max_length=20,
+        choices=STATUS_CHOICES, default='draft',
+    )
+    published_at = models.DateTimeField(
+        'Дата публикации', null=True, blank=True,
+    )
     error_message = models.TextField('Текст ошибки', blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
 

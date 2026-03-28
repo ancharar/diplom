@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import client from './api/client';
 import Header from './components/Header';
+import ToastContainer from './components/Toast';
 import PrivateRoute from './components/PrivateRoute';
+import { ToastProvider } from './contexts/ToastContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProjectsPage from './pages/ProjectsPage';
@@ -39,18 +41,21 @@ export default function App() {
   if (loading) return null;
 
   return (
-    <BrowserRouter>
-      <Header user={user} onLogout={handleLogout} />
-      <Routes>
-        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-        <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
-        <Route path="/projects" element={<PrivateRoute><ProjectsPage user={user} /></PrivateRoute>} />
-        <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage user={user} /></PrivateRoute>} />
-        <Route path="/tasks/:id" element={<PrivateRoute><TaskDetailPage user={user} /></PrivateRoute>} />
-        <Route path="/my-requests" element={<PrivateRoute><MyRequestsPage user={user} /></PrivateRoute>} />
-        <Route path="/vk" element={<PrivateRoute><VKPage user={user} /></PrivateRoute>} />
-        <Route path="*" element={<Navigate to="/projects" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Header user={user} onLogout={handleLogout} />
+        <ToastContainer />
+        <Routes>
+          <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+          <Route path="/register" element={<RegisterPage onLogin={handleLogin} />} />
+          <Route path="/projects" element={<PrivateRoute><ProjectsPage user={user} /></PrivateRoute>} />
+          <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailPage user={user} /></PrivateRoute>} />
+          <Route path="/tasks/:id" element={<PrivateRoute><TaskDetailPage user={user} /></PrivateRoute>} />
+          <Route path="/my-requests" element={<PrivateRoute><MyRequestsPage user={user} /></PrivateRoute>} />
+          <Route path="/vk" element={<PrivateRoute><VKPage user={user} /></PrivateRoute>} />
+          <Route path="*" element={<Navigate to="/projects" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

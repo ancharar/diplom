@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import Loader from '../components/Loader';
+import { useToast } from '../contexts/ToastContext';
+import { getErrorMessage } from '../utils/errorMessages';
 import type { Project, VKPublication, User } from '../types';
 import styles from '../styles/VKPage.module.scss';
 
@@ -9,6 +11,7 @@ interface VKPageProps {
 }
 
 export default function VKPage({ user }: VKPageProps) {
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [hasToken, setHasToken] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
@@ -57,9 +60,10 @@ export default function VKPage({ user }: VKPageProps) {
       await client.post('/vk/token/', { access_token: tokenInput });
       setTokenInput('');
       setHasToken(true);
+      showSuccess('Токен сохранён');
     } catch (err) {
-      const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
-      setTokenError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка сохранения');
+      showError(getErrorMessage(err));
+      setTokenError(getErrorMessage(err));
     }
   };
 
@@ -85,18 +89,14 @@ export default function VKPage({ user }: VKPageProps) {
         content: publishForm.content,
         owner_id: Number(publishForm.owner_id),
       });
+      showSuccess('Пост опубликован!');
       setPublishSuccess('Пост опубликован!');
       setPublishForm({ project: '', title: '', content: '', owner_id: '' });
       const { data } = await client.get<VKPublication[]>('/vk/publications/');
       setPublications(data);
     } catch (err) {
-      const resp = (err as { response?: { data?: Record<string, string | string[]> } }).response?.data;
-      if (resp) {
-        const messages = Object.values(resp).flat();
-        setPublishError(messages.join('. '));
-      } else {
-        setPublishError('Ошибка публикации');
-      }
+      showError(getErrorMessage(err));
+      setPublishError(getErrorMessage(err));
     }
   };
 

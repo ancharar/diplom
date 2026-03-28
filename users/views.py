@@ -96,3 +96,17 @@ class MeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class LogoutView(APIView):
+    """Выход из системы — добавление refresh-токена в чёрный список."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request) -> Response:
+        try:
+            token = RefreshToken(request.data.get('refresh'))
+            token.blacklist()
+            return Response(status=205)
+        except Exception:
+            return Response({'error': 'Неверный токен'}, status=status.HTTP_400_BAD_REQUEST)

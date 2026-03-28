@@ -26,12 +26,13 @@ class IsProjectMember(BasePermission):
         ).exists()
 
 
-class IsProjectAdmin(BasePermission):
-    """Владелец проекта (администратор проекта)."""
-
-    message = 'Только владелец проекта может выполнить это действие.'
-
-    def has_object_permission(self, request: Request, view, obj) -> bool:
-        from .models import Project
-        project = obj if isinstance(obj, Project) else obj.project
-        return project.owner == request.user
+# ROLE_DISABLED: IsProjectAdmin заменён на IsProjectOwner для рассмотрения заявок
+# class IsProjectAdmin(BasePermission):
+#     """Владелец проекта (администратор проекта)."""
+#
+#     message = 'Только владелец проекта может выполнить это действие.'
+#
+#     def has_object_permission(self, request: Request, view, obj) -> bool:
+#         from .models import Project
+#         project = obj if isinstance(obj, Project) else obj.project
+#         return project.owner == request.user

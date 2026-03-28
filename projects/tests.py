@@ -15,16 +15,17 @@ class ProjectCRUDTest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.admin = User.objects.create_user(
-            email='admin@test.com', full_name='Admin', password='testpass123', role='admin',
+        # ROLE_DISABLED: убрано role='admin' и role='member'
+        self.user = User.objects.create_user(
+            email='user@test.com', full_name='User', password='testpass123',
         )
-        self.member = User.objects.create_user(
-            email='member@test.com', full_name='Member', password='testpass123', role='member',
+        self.other_user = User.objects.create_user(
+            email='other@test.com', full_name='Other', password='testpass123',
         )
-        self.client.force_authenticate(user=self.admin)
+        self.client.force_authenticate(user=self.user)
 
     def test_create_project(self):
-        """Администратор может создать проект."""
+        """Любой авторизованный пользователь может создать проект."""
         response = self.client.post('/api/v1/projects/', {
             'title': 'Project', 'area': 'AI', 'start_date': '2026-01-01', 'end_date': '2026-12-31',
         }, format='json')
@@ -32,16 +33,16 @@ class ProjectCRUDTest(TestCase):
         self.assertEqual(response.data['title'], 'Project')
         # Владелец автоматически становится участником
         self.assertTrue(
-            ProjectMembership.objects.filter(user=self.admin, project_id=response.data['id']).exists()
+            ProjectMembership.objects.filter(user=self.user, project_id=response.data['id']).exists()
         )
 
-    def test_member_cannot_create_project(self):
-        """Участник не может создать проект."""
-        self.client.force_authenticate(user=self.member)
+    def test_any_user_can_create_project(self):
+        """Любой авторизованный пользователь может создать проект (ROLE_DISABLED)."""
+        self.client.force_authenticate(user=self.other_user)
         response = self.client.post('/api/v1/projects/', {
             'title': 'X', 'area': 'X', 'start_date': '2026-01-01', 'end_date': '2026-12-31',
         }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_end_date_validation(self):
         """end_date не может быть раньше start_date."""
@@ -56,13 +57,14 @@ class ProjectMemberTest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.admin = User.objects.create_user(
-            email='admin@test.com', full_name='Admin', password='testpass123', role='admin',
+        # ROLE_DISABLED: убрано role='admin'
+        self.user = User.objects.create_user(
+            email='user@test.com', full_name='User', password='testpass123',
         )
         self.member = User.objects.create_user(
             email='member@test.com', full_name='Member', password='testpass123',
         )
-        self.client.force_authenticate(user=self.admin)
+        self.client.force_authenticate(user=self.user)
         # Создаём проект
         response = self.client.post('/api/v1/projects/', {
             'title': 'P', 'area': 'A', 'start_date': '2026-01-01', 'end_date': '2026-12-31',
@@ -95,7 +97,7 @@ class ProjectMemberTest(TestCase):
     def test_cannot_remove_owner(self):
         """Нельзя удалить владельца проекта."""
         response = self.client.delete(
-            f'/api/v1/projects/{self.project_id}/members/{self.admin.id}/',
+            f'/api/v1/projects/{self.project_id}/members/{self.user.id}/',
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -124,9 +126,10 @@ class JoinRequestTest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+        # ROLE_DISABLED: убрано role='admin'
         self.owner = User.objects.create_user(
             email='owner@test.com', full_name='Owner',
-            password='testpass123', role='admin',
+            password='testpass123',
         )
         self.member = User.objects.create_user(
             email='member@test.com', full_name='Member',

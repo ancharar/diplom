@@ -23,11 +23,12 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     owner = UserSerializer(read_only=True)
     memberships = ProjectMembershipSerializer(many=True, read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Project
         fields = (
-            'id', 'title', 'description', 'area', 'status', 'goal',
+            'id', 'title', 'description', 'area', 'status', 'status_display', 'goal',
             'owner', 'memberships', 'start_date', 'end_date',
             'created_at', 'updated_at',
         )
@@ -50,16 +51,21 @@ class ProjectCatalogSerializer(serializers.ModelSerializer):
         )
 
     def get_members_count(self, obj: Project) -> int:
+        if hasattr(obj, '_members_count'):
+            return obj._members_count
         return obj.memberships.count()
 
     def get_is_member(self, obj: Project) -> bool:
         user = self.context['request'].user
-        return (
-            obj.owner_id == user.id
-            or obj.memberships.filter(user=user).exists()
-        )
+        if obj.owner_id == user.id:
+            return True
+        if hasattr(obj, '_is_member'):
+            return obj._is_member
+        return obj.memberships.filter(user=user).exists()
 
     def get_has_pending_request(self, obj: Project) -> bool:
+        if hasattr(obj, '_has_pending_request'):
+            return obj._has_pending_request
         user = self.context['request'].user
         return obj.join_requests.filter(
             user=user, status='pending',

@@ -1,3 +1,12 @@
+// Breakpoints по документу: ноутбуки и ПК
+$breakpoint-laptop: 1024px;
+$breakpoint-desktop: 1440px;
+
+// Базовый размер — уважает настройки браузера (UI_NF5)
+html {
+  font-size: 100%;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -9,13 +18,21 @@ body {
 
 a { color: #2e75b6; text-decoration: none; &:hover { text-decoration: underline; } }
 
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem;
 
-.page-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 20px; }
+  @media (max-width: $breakpoint-laptop) {
+    padding: 1rem;
+  }
+}
+
+.page-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.25rem; }
 
 .btn {
   display: inline-block;
-  padding: 8px 18px;
+  padding: 0.5rem 1.125rem;
   border: none;
   border-radius: 6px;
   font-size: 0.875rem;
@@ -29,33 +46,63 @@ a { color: #2e75b6; text-decoration: none; &:hover { text-decoration: underline;
 .btn-secondary { background: #636e72; color: #fff; }
 
 .form-group {
-  margin-bottom: 14px;
+  margin-bottom: 0.875rem;
   label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
   input, textarea, select {
     width: 100%;
-    padding: 8px 12px;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #dfe6e9;
     border-radius: 6px;
     font-size: 0.9rem;
     &:focus { outline: none; border-color: #2e75b6; }
   }
-  textarea { resize: vertical; min-height: 80px; }
+  textarea { resize: vertical; min-height: 5rem; }
 }
 
-.error-msg { color: #d63031; font-size: 0.85rem; margin-top: 8px; }
+.error-msg { color: #d63031; font-size: 0.85rem; margin-top: 0.5rem; }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #dfe6e9; }
+  th, td { padding: 0.625rem 0.75rem; text-align: left; border-bottom: 1px solid #dfe6e9; }
   th { background: #f0f3f7; font-weight: 600; font-size: 0.85rem; }
   tr:hover { background: #f8f9fb; }
+}
+
+// Таблица с горизонтальной прокруткой на ноутбуке
+.table-responsive {
+  @media (max-width: $breakpoint-laptop) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .card {
   background: #fff;
   border-radius: 8px;
-  padding: 20px;
+  padding: 1.25rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
+}
+
+// Сетка карточек проектов — адаптивная
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+
+  @media (max-width: $breakpoint-laptop) {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+// Форма: однаколоночная на ноутбуке
+.form-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: $breakpoint-laptop) {
+    grid-template-columns: 1fr;
+  }
 }

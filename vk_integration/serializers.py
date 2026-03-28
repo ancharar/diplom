@@ -25,10 +25,21 @@ class VKTokenResponseSerializer(serializers.ModelSerializer):
 class VKPublishSerializer(serializers.Serializer):
     """Сериализатор для публикации поста в VK."""
 
-    project = serializers.IntegerField()
-    title = serializers.CharField(max_length=255)
-    content = serializers.CharField()
+    project_id = serializers.IntegerField()
+    text = serializers.CharField(max_length=4096)
     owner_id = serializers.IntegerField()
+    attachment_type = serializers.ChoiceField(
+        choices=['none', 'photo', 'doc'], default='none',
+    )
+    file = serializers.FileField(required=False)
+
+    def validate(self, attrs):
+        atype = attrs.get('attachment_type', 'none')
+        if atype != 'none' and not attrs.get('file'):
+            raise serializers.ValidationError(
+                {'file': 'Файл обязателен при выбранном типе вложения.'},
+            )
+        return attrs
 
 
 class VKPublicationSerializer(serializers.ModelSerializer):
@@ -40,7 +51,8 @@ class VKPublicationSerializer(serializers.ModelSerializer):
         model = VKPublication
         fields = (
             'id', 'project', 'author', 'title', 'content',
-            'vk_post_id', 'owner_id', 'status', 'published_at',
+            'vk_post_id', 'owner_id', 'attachment_type',
+            'vk_attachment_id', 'status', 'published_at',
             'error_message', 'created_at',
         )
         read_only_fields = fields

@@ -9,28 +9,28 @@ User = get_user_model()
 
 # Допустимые переходы между состояниями задачи
 ALLOWED_TRANSITIONS: dict[str, list[str]] = {
-    'new':            ['on_discussion', 'disapproved'],
-    'on_discussion':  ['approved', 'disapproved'],
-    'approved':       ['in_progress'],
-    'in_progress':    ['complete'],
-    'complete':       ['testing', 'to_review'],
-    'testing':        ['to_review', 'in_progress'],
-    'to_review':      ['ready_to_merge', 'in_progress'],
-    'ready_to_merge': ['closed'],
-    'closed':         [],
-    'disapproved':    [],
+    'todo':        ['in_progress'],
+    'in_progress': ['done', 'todo'],
+    'done':        [],
+}
+
+# Русские названия для текста ошибок
+STATUS_LABELS: dict[str, str] = {
+    'todo':        'К выполнению',
+    'in_progress': 'В процессе',
+    'done':        'Завершена',
 }
 
 
 def create_task(project, user: User, data: dict) -> Task:
-    """Создание задачи со статусом 'new' и запись в историю."""
+    """Создание задачи со статусом 'todo' и запись в историю."""
     task = Task.objects.create(project=project, created_by=user, **data)
     TaskHistory.objects.create(
         task=task,
         changed_by=user,
         field_name='status',
         old_value='',
-        new_value='new',
+        new_value='todo',
     )
     return task
 
@@ -59,11 +59,12 @@ def transition_task(task: Task, user: User, new_status: str) -> Task:
     allowed = ALLOWED_TRANSITIONS.get(current, [])
 
     if new_status not in allowed:
-        allowed_str = ', '.join(allowed) if allowed else 'нет доступных переходов'
+        current_label = STATUS_LABELS.get(current, current)
+        new_label = STATUS_LABELS.get(new_status, new_status)
         raise ValidationError({
-            'detail': (
-                f"Переход из '{current}' в '{new_status}' запрещён. "
-                f"Допустимые: {allowed_str}"
+            'error': (
+                f'Переход из статуса «{current_label}» '
+                f'в статус «{new_label}» недопустим'
             )
         })
 

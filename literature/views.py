@@ -3,6 +3,7 @@
 import base64
 
 from bson.errors import InvalidId
+from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -112,6 +113,12 @@ class FileListUploadView(APIView):
         uploaded = request.FILES.get('file')
         if not uploaded:
             return Response({'detail': 'Файл не передан.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            services.validate_file(uploaded)
+        except ValidationError as e:
+            return Response({'error': e.message}, status=status.HTTP_400_BAD_REQUEST)
+
         data = {
             'project_id': project_id,
             'filename': uploaded.name,
@@ -153,3 +160,38 @@ class FileDeleteView(APIView):
         if not deleted:
             return Response({'detail': 'Файл не найден.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SearchLibraryView(APIView):
+    """Полнотекстовый поиск по литературным источникам проекта."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, project_id: int) -> Response:
+        # Проверка участия в проекте
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND,
+            )
+        perm = IsProjectMember()
+        if not perm.has_object_permission(request, self, project):
+            return Response(
+                {'detail': perm.message}, status=status.HTTP_403_FORBIDDEN,
+            )
+
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response(
+                {'error': 'Запрос не может быть пустым'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(query) > 200:
+            return Response(
+                {'error': 'Запрос слишком длинный'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = services.search_sources(project_id, query)
+        return Response(results)

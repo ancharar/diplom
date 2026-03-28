@@ -10,7 +10,8 @@ interface RegisterPageProps {
 
 export default function RegisterPage({ onLogin }: RegisterPageProps) {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', password2: '', role: 'member' });
+  // ROLE_DISABLED: убран role из формы
+  const [form, setForm] = useState({ full_name: '', email: '', password: '', password2: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,7 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
         full_name: form.full_name,
         email: form.email,
         password: form.password,
-        role: form.role,
+        // ROLE_DISABLED: role: form.role,
       });
       localStorage.setItem('access', data.tokens.access);
       localStorage.setItem('refresh', data.tokens.refresh);
@@ -68,13 +69,15 @@ export default function RegisterPage({ onLogin }: RegisterPageProps) {
           <label>Подтверждение пароля</label>
           <input type="password" value={form.password2} onChange={(e) => update('password2', e.target.value)} required />
         </div>
+        {/* ROLE_DISABLED: выбор роли временно убран
         <div className="form-group">
           <label>Роль</label>
-          <select value={form.role} onChange={(e) => update('role', e.target.value)}>
+          <select>
             <option value="member">Участник</option>
             <option value="admin">Администратор</option>
           </select>
         </div>
+        */}
         {error && <p className="error-msg">{error}</p>}
         <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
           {loading ? 'Регистрация...' : 'Зарегистрироваться'}
