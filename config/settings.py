@@ -34,9 +34,11 @@ INSTALLED_APPS = [
     # Сторонние библиотеки
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'django_filters',
     'corsheaders',
+    'debug_toolbar',
     # Приложения проекта
     'users.apps.UsersConfig',
     'projects.apps.ProjectsConfig',
@@ -54,7 +56,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+INTERNAL_IPS = ['127.0.0.1']
 
 ROOT_URLCONF = 'config.urls'
 
@@ -124,6 +129,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Кастомная модель пользователя
 AUTH_USER_MODEL = 'users.User'
+
+
+# ─── VK OAuth ────────────────────────────────────────────────────────────────
+
+VK_APP_ID = os.getenv('VK_APP_ID')
+VK_APP_SECRET = os.getenv('VK_APP_SECRET')
+VK_REDIRECT_URI = os.getenv(
+    'VK_REDIRECT_URI',
+    'http://localhost:8000/api/v1/vk/callback/',
+)
+VK_API_VERSION = os.getenv('VK_API_VERSION', '5.131')
+
+FRONTEND_URL = os.getenv(
+    'FRONTEND_URL', 'http://localhost:5173',
+)
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # ─── MongoDB ─────────────────────────────────────────────────────────────────

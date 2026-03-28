@@ -9,7 +9,7 @@ class Project(models.Model):
 
     STATUS_CHOICES = [
         ('in_progress', 'В процессе'),
-        ('completed', 'Завершён'),
+        ('done', 'Завершен'),
     ]
 
     title = models.CharField('Название', max_length=255)

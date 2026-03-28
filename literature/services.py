@@ -4,8 +4,29 @@ import base64
 from datetime import datetime, timezone
 
 from bson import ObjectId
+from django.core.exceptions import ValidationError
 
 from .mongo import get_files_collection, get_sources_collection
+
+# ── Валидация файлов ─────────────────────────────────────────────────────────
+
+ALLOWED_FORMATS = {'pdf', 'doc', 'docx', 'txt', 'xlsx', 'pptx'}
+MAX_FILE_SIZE = 52_428_800  # 50 МБ
+
+
+def validate_file(file) -> None:
+    """Проверить файл перед сохранением."""
+    if not file.name or len(file.name) > 255:
+        raise ValidationError('Недопустимое имя файла')
+
+    ext = file.name.rsplit('.', 1)[-1].lower() if '.' in file.name else ''
+    if ext not in ALLOWED_FORMATS:
+        raise ValidationError(
+            f'Недопустимый формат. Разрешены: {", ".join(sorted(ALLOWED_FORMATS))}'
+        )
+
+    if file.size > MAX_FILE_SIZE:
+        raise ValidationError('Размер файла превышает 50 МБ')
 
 
 # ── Литературные источники ───────────────────────────────────────────────────
@@ -61,6 +82,18 @@ def delete_source(source_id: str) -> bool:
     """Удалить литературный источник."""
     result = get_sources_collection().delete_one({'_id': ObjectId(source_id)})
     return result.deleted_count > 0
+
+
+def search_sources(project_id: int, query: str) -> list[dict]:
+    """Полнотекстовый поиск по источникам проекта через MongoDB text-индекс."""
+    col = get_sources_collection()
+    docs = list(
+        col.find(
+            {'$text': {'$search': query}, 'project_id': project_id},
+            {'score': {'$meta': 'textScore'}},
+        ).sort([('score', {'$meta': 'textScore'})])
+    )
+    return [_serialize_source(d) for d in docs]
 
 
 # ── Файлы ────────────────────────────────────────────────────────────────────

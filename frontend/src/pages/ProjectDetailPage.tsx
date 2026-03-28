@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import Loader from '../components/Loader';
+import { SkeletonTable } from '../components/Skeleton';
 import StatusBadge from '../components/StatusBadge';
 import JoinRequestModal from '../components/JoinRequestModal';
+import { useToast } from '../contexts/ToastContext';
+import { getErrorMessage } from '../utils/errorMessages';
 import type { Project, ProjectCatalog, Task, User, JoinRequest, LiteratureSource, ProjectFile } from '../types';
 import styles from '../styles/ProjectDetail.module.scss';
 
@@ -31,15 +34,25 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Отклонена',
 };
 
+type TabKey = 'tasks' | 'literature' | 'requests';
+
 export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
 
   /* Данные проекта — полный или краткий формат */
   const [projectFull, setProjectFull] = useState<Project | null>(null);
   const [projectCatalog, setProjectCatalog] = useState<ProjectCatalog | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  /* Активная вкладка */
+  const [activeTab, setActiveTab] = useState<TabKey>('tasks');
+
+  /* Флаги загрузки вкладок (lazy loading) */
+  const [loadedTabs, setLoadedTabs] = useState<Set<TabKey>>(new Set());
+  const [tabLoading, setTabLoading] = useState<Set<TabKey>>(new Set());
 
   /* Задачи (только для участников) */
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -77,7 +90,6 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
 
   const fetchProject = async () => {
     const { data } = await client.get(`/projects/${id}/`);
-    /* Определяем формат: полный (с memberships) или краткий (с members_count) */
     if ('memberships' in data) {
       setProjectFull(data as Project);
       setProjectCatalog(null);
@@ -89,15 +101,15 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
       if (filterStatus) params.status = filterStatus;
       if (filterPriority) params.priority = filterPriority;
       const { data } = await client.get<Task[]>(`/projects/${id}/tasks/`, { params });
       setTasks(data);
-    } catch { /* не участник — нет доступа к задачам */ }
-  };
+    } catch { /* не участник */ }
+  }, [id, filterStatus, filterPriority]);
 
   const fetchSources = async () => {
     try {
@@ -113,26 +125,54 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     } catch { /* ignore */ }
   };
 
-  const fetchJoinRequests = async () => {
+  const fetchJoinRequests = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
       if (reqFilterStatus) params.status = reqFilterStatus;
       const { data } = await client.get<JoinRequest[]>(`/projects/${id}/join-requests/`, { params });
       setJoinRequests(data);
     } catch { /* не владелец */ }
-  };
+  }, [id, reqFilterStatus]);
 
+  /* Первоначальная загрузка проекта */
   useEffect(() => {
-    Promise.all([fetchProject(), fetchTasks(), fetchSources(), fetchFiles()]).finally(() => setLoading(false));
+    fetchProject().finally(() => setLoading(false));
   }, [id]);
 
+  /* Lazy loading: загружаем данные вкладки при переключении */
   useEffect(() => {
-    if (!loading && isMember) fetchTasks();
-  }, [filterStatus, filterPriority]);
+    if (loading || !isMember) return;
 
+    const loadTab = async (tab: TabKey) => {
+      setTabLoading((prev) => new Set(prev).add(tab));
+      try {
+        if (tab === 'tasks') {
+          await fetchTasks();
+        } else if (tab === 'literature') {
+          await Promise.all([fetchSources(), fetchFiles()]);
+        } else if (tab === 'requests' && isOwner) {
+          await fetchJoinRequests();
+        }
+      } finally {
+        setTabLoading((prev) => { const s = new Set(prev); s.delete(tab); return s; });
+        setLoadedTabs((prev) => new Set(prev).add(tab));
+      }
+    };
+
+    if (!loadedTabs.has(activeTab)) {
+      loadTab(activeTab);
+    }
+  }, [activeTab, loading, isMember, isOwner]);
+
+  /* Перезагрузка задач при смене фильтров */
   useEffect(() => {
-    if (!loading && isOwner) fetchJoinRequests();
-  }, [isOwner, reqFilterStatus]);
+    if (!loading && isMember && loadedTabs.has('tasks')) fetchTasks();
+  }, [filterStatus, filterPriority, fetchTasks]);
+
+  /* Перезагрузка заявок при смене фильтра */
+  useEffect(() => {
+    if (!loading && isOwner && loadedTabs.has('requests')) fetchJoinRequests();
+  }, [reqFilterStatus, fetchJoinRequests]);
 
   /* Добавить участника */
   const handleAddMember = async (e: React.FormEvent) => {
@@ -144,8 +184,10 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
         project_role: memberForm.project_role,
       });
       setMemberForm({ user_id: '', project_role: 'developer' });
+      showSuccess('Участник добавлен');
       fetchProject();
     } catch (err) {
+      showError(getErrorMessage(err));
       const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
       setMemberError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка добавления');
     }
@@ -173,8 +215,10 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       await client.post(`/projects/${id}/tasks/`, payload);
       setShowTaskForm(false);
       setTaskForm({ title: '', description: '', priority: 'medium', deadline: '' });
+      showSuccess('Задача создана');
       fetchTasks();
     } catch (err) {
+      showError(getErrorMessage(err));
       const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
       setTaskError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка создания задачи');
     }
@@ -194,6 +238,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       await client.post(`/projects/${id}/literature/sources/`, payload);
       setShowSourceForm(false);
       setSourceForm({ title: '', authors: '', year: '', url: '', description: '', tags: '' });
+      showSuccess('Источник добавлен');
       fetchSources();
     } catch {
       setSourceError('Ошибка создания источника');
@@ -224,6 +269,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       });
       setFileDesc('');
       form.reset();
+      showSuccess('Файл загружен');
       fetchFiles();
     } catch {
       setFileError('Ошибка загрузки файла');
@@ -243,6 +289,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       const payload: Record<string, string> = { action };
       if (assignedRole) payload.assigned_role = assignedRole;
       await client.patch(`/projects/${id}/join-requests/${reqId}/`, payload);
+      showSuccess(action === 'approved' ? 'Заявка одобрена' : 'Заявка отклонена');
       fetchJoinRequests();
       fetchProject();
     } catch { /* ignore */ }
@@ -286,6 +333,8 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
 
   const project = projectFull;
   if (!project) return <p>Проект не найден</p>;
+
+  const isTabLoading = (tab: TabKey) => tabLoading.has(tab);
 
   /* ═══ УЧАСТНИК — полная информация ═══ */
   return (
@@ -338,8 +387,204 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
         {memberError && <p className="error-msg">{memberError}</p>}
       </div>
 
-      {/* Заявки на вступление (только для владельца) */}
-      {isOwner && (
+      {/* Вкладки */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'tasks' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('tasks')}
+        >
+          Задачи
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'literature' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('literature')}
+        >
+          Библиотека
+        </button>
+        {isOwner && (
+          <button
+            className={`${styles.tab} ${activeTab === 'requests' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('requests')}
+          >
+            Заявки
+          </button>
+        )}
+      </div>
+
+      {/* Вкладка: Задачи */}
+      {activeTab === 'tasks' && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>
+            Задачи
+            <button className="btn btn-primary" onClick={() => setShowTaskForm(!showTaskForm)}>
+              {showTaskForm ? 'Отмена' : 'Создать задачу'}
+            </button>
+          </div>
+
+          {showTaskForm && (
+            <form className="card" onSubmit={handleCreateTask} style={{ marginBottom: 16 }}>
+              <div className="form-group"><label>Название</label><input value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} required /></div>
+              <div className="form-group"><label>Описание</label><textarea value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} /></div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Приоритет</label>
+                  <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>
+                    <option value="low">Низкий</option>
+                    <option value="medium">Средний</option>
+                    <option value="high">Высокий</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ flex: 1 }}><label>Дедлайн</label><input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })} /></div>
+              </div>
+              {taskError && <p className="error-msg">{taskError}</p>}
+              <button type="submit" className="btn btn-primary">Создать</button>
+            </form>
+          )}
+
+          <div className={styles.filters}>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="">Все статусы</option>
+              <option value="todo">К выполнению</option>
+              <option value="in_progress">В процессе</option>
+              <option value="done">Завершена</option>
+            </select>
+            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+              <option value="">Все приоритеты</option>
+              <option value="low">Низкий</option>
+              <option value="medium">Средний</option>
+              <option value="high">Высокий</option>
+            </select>
+          </div>
+
+          {isTabLoading('tasks') ? (
+            <SkeletonTable rows={5} cols={5} />
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Название</th>
+                  <th>Статус</th>
+                  <th>Приоритет</th>
+                  <th>Исполнитель</th>
+                  <th>Дедлайн</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((t) => (
+                  <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/tasks/${t.id}`)}>
+                    <td>{t.title}</td>
+                    <td><StatusBadge status={t.status} /></td>
+                    <td>{PRIORITY_LABELS[t.priority] || t.priority}</td>
+                    <td>{t.assignee?.full_name || '—'}</td>
+                    <td>{t.deadline || '—'}</td>
+                  </tr>
+                ))}
+                {tasks.length === 0 && (
+                  <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет задач</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Вкладка: Библиотека */}
+      {activeTab === 'literature' && (
+        <>
+          {/* Литературные источники (MongoDB) */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>
+              Литературные источники
+              <button className="btn btn-primary" onClick={() => setShowSourceForm(!showSourceForm)}>
+                {showSourceForm ? 'Отмена' : 'Добавить источник'}
+              </button>
+            </div>
+
+            {showSourceForm && (
+              <form className="card" onSubmit={handleCreateSource} style={{ marginBottom: 16 }}>
+                <div className="form-group"><label>Название</label><input value={sourceForm.title} onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })} required /></div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div className="form-group" style={{ flex: 2 }}><label>Авторы</label><input value={sourceForm.authors} onChange={(e) => setSourceForm({ ...sourceForm, authors: e.target.value })} /></div>
+                  <div className="form-group" style={{ flex: 1 }}><label>Год</label><input type="number" value={sourceForm.year} onChange={(e) => setSourceForm({ ...sourceForm, year: e.target.value })} /></div>
+                </div>
+                <div className="form-group"><label>URL</label><input value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} /></div>
+                <div className="form-group"><label>Описание</label><textarea value={sourceForm.description} onChange={(e) => setSourceForm({ ...sourceForm, description: e.target.value })} /></div>
+                <div className="form-group"><label>Теги (через запятую)</label><input value={sourceForm.tags} onChange={(e) => setSourceForm({ ...sourceForm, tags: e.target.value })} /></div>
+                {sourceError && <p className="error-msg">{sourceError}</p>}
+                <button type="submit" className="btn btn-primary">Добавить</button>
+              </form>
+            )}
+
+            {isTabLoading('literature') ? (
+              <SkeletonTable rows={4} cols={5} />
+            ) : (
+              <table>
+                <thead>
+                  <tr><th>Название</th><th>Авторы</th><th>Год</th><th>Теги</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {sources.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}</td>
+                      <td>{s.authors || '—'}</td>
+                      <td>{s.year || '—'}</td>
+                      <td>{s.tags?.join(', ') || '—'}</td>
+                      <td><button className={styles.removeBtn} onClick={() => handleDeleteSource(s.id)}>×</button></td>
+                    </tr>
+                  ))}
+                  {sources.length === 0 && (
+                    <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет источников</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Файлы (MongoDB) */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Файлы и документы</div>
+            <form onSubmit={handleUploadFile} style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                <label>Файл</label>
+                <input type="file" required />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                <label>Описание</label>
+                <input value={fileDesc} onChange={(e) => setFileDesc(e.target.value)} />
+              </div>
+              <button type="submit" className="btn btn-primary">Загрузить</button>
+            </form>
+            {fileError && <p className="error-msg">{fileError}</p>}
+
+            {isTabLoading('literature') ? (
+              <SkeletonTable rows={3} cols={5} />
+            ) : (
+              <table>
+                <thead>
+                  <tr><th>Имя файла</th><th>Тип</th><th>Размер</th><th>Описание</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {files.map((f) => (
+                    <tr key={f.id}>
+                      <td>{f.filename}</td>
+                      <td>{f.content_type}</td>
+                      <td>{(f.size / 1024).toFixed(1)} КБ</td>
+                      <td>{f.description || '—'}</td>
+                      <td><button className={styles.removeBtn} onClick={() => handleDeleteFile(f.id)}>×</button></td>
+                    </tr>
+                  ))}
+                  {files.length === 0 && (
+                    <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет файлов</td></tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Вкладка: Заявки (только для владельца) */}
+      {activeTab === 'requests' && isOwner && (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Заявки на вступление</div>
           <div className={styles.filters}>
@@ -350,199 +595,44 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
               <option value="rejected">Отклонённые</option>
             </select>
           </div>
-          <table>
-            <thead>
-              <tr><th>ФИО</th><th>Желаемая роль</th><th>Сообщение</th><th>Дата</th><th>Статус</th><th></th></tr>
-            </thead>
-            <tbody>
-              {joinRequests.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.user.full_name}</td>
-                  <td>{ROLE_LABELS[r.desired_role] || r.desired_role}</td>
-                  <td>{r.message || '—'}</td>
-                  <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                  <td>{STATUS_LABELS[r.status] || r.status}</td>
-                  <td>
-                    {r.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn btn-sm btn-primary" onClick={() => handleReviewRequest(r.id, 'approved')}>
-                          Одобрить
-                        </button>
-                        <button className="btn btn-sm" onClick={() => handleReviewRequest(r.id, 'rejected')}>
-                          Отклонить
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {joinRequests.length === 0 && (
-                <tr><td colSpan={6} style={{ textAlign: 'center' }}>Нет заявок</td></tr>
-              )}
-            </tbody>
-          </table>
+
+          {isTabLoading('requests') ? (
+            <SkeletonTable rows={3} cols={6} />
+          ) : (
+            <table>
+              <thead>
+                <tr><th>ФИО</th><th>Желаемая роль</th><th>Сообщение</th><th>Дата</th><th>Статус</th><th></th></tr>
+              </thead>
+              <tbody>
+                {joinRequests.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.user.full_name}</td>
+                    <td>{ROLE_LABELS[r.desired_role] || r.desired_role}</td>
+                    <td>{r.message || '—'}</td>
+                    <td>{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td>{STATUS_LABELS[r.status] || r.status}</td>
+                    <td>
+                      {r.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button className="btn btn-sm btn-primary" onClick={() => handleReviewRequest(r.id, 'approved')}>
+                            Одобрить
+                          </button>
+                          <button className="btn btn-sm" onClick={() => handleReviewRequest(r.id, 'rejected')}>
+                            Отклонить
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {joinRequests.length === 0 && (
+                  <tr><td colSpan={6} style={{ textAlign: 'center' }}>Нет заявок</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
-
-      {/* Литературные источники (MongoDB) */}
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>
-          Литературные источники
-          <button className="btn btn-primary" onClick={() => setShowSourceForm(!showSourceForm)}>
-            {showSourceForm ? 'Отмена' : 'Добавить источник'}
-          </button>
-        </div>
-
-        {showSourceForm && (
-          <form className="card" onSubmit={handleCreateSource} style={{ marginBottom: 16 }}>
-            <div className="form-group"><label>Название</label><input value={sourceForm.title} onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })} required /></div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div className="form-group" style={{ flex: 2 }}><label>Авторы</label><input value={sourceForm.authors} onChange={(e) => setSourceForm({ ...sourceForm, authors: e.target.value })} /></div>
-              <div className="form-group" style={{ flex: 1 }}><label>Год</label><input type="number" value={sourceForm.year} onChange={(e) => setSourceForm({ ...sourceForm, year: e.target.value })} /></div>
-            </div>
-            <div className="form-group"><label>URL</label><input value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} /></div>
-            <div className="form-group"><label>Описание</label><textarea value={sourceForm.description} onChange={(e) => setSourceForm({ ...sourceForm, description: e.target.value })} /></div>
-            <div className="form-group"><label>Теги (через запятую)</label><input value={sourceForm.tags} onChange={(e) => setSourceForm({ ...sourceForm, tags: e.target.value })} /></div>
-            {sourceError && <p className="error-msg">{sourceError}</p>}
-            <button type="submit" className="btn btn-primary">Добавить</button>
-          </form>
-        )}
-
-        <table>
-          <thead>
-            <tr><th>Название</th><th>Авторы</th><th>Год</th><th>Теги</th><th></th></tr>
-          </thead>
-          <tbody>
-            {sources.map((s) => (
-              <tr key={s.id}>
-                <td>{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}</td>
-                <td>{s.authors || '—'}</td>
-                <td>{s.year || '—'}</td>
-                <td>{s.tags?.join(', ') || '—'}</td>
-                <td><button className={styles.removeBtn} onClick={() => handleDeleteSource(s.id)}>×</button></td>
-              </tr>
-            ))}
-            {sources.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет источников</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Файлы (MongoDB) */}
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Файлы и документы</div>
-        <form onSubmit={handleUploadFile} style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-            <label>Файл</label>
-            <input type="file" required />
-          </div>
-          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-            <label>Описание</label>
-            <input value={fileDesc} onChange={(e) => setFileDesc(e.target.value)} />
-          </div>
-          <button type="submit" className="btn btn-primary">Загрузить</button>
-        </form>
-        {fileError && <p className="error-msg">{fileError}</p>}
-
-        <table>
-          <thead>
-            <tr><th>Имя файла</th><th>Тип</th><th>Размер</th><th>Описание</th><th></th></tr>
-          </thead>
-          <tbody>
-            {files.map((f) => (
-              <tr key={f.id}>
-                <td>{f.filename}</td>
-                <td>{f.content_type}</td>
-                <td>{(f.size / 1024).toFixed(1)} КБ</td>
-                <td>{f.description || '—'}</td>
-                <td><button className={styles.removeBtn} onClick={() => handleDeleteFile(f.id)}>×</button></td>
-              </tr>
-            ))}
-            {files.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет файлов</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Задачи */}
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>
-          Задачи
-          <button className="btn btn-primary" onClick={() => setShowTaskForm(!showTaskForm)}>
-            {showTaskForm ? 'Отмена' : 'Создать задачу'}
-          </button>
-        </div>
-
-        {showTaskForm && (
-          <form className="card" onSubmit={handleCreateTask} style={{ marginBottom: 16 }}>
-            <div className="form-group"><label>Название</label><input value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} required /></div>
-            <div className="form-group"><label>Описание</label><textarea value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} /></div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Приоритет</label>
-                <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>
-                  <option value="low">Низкий</option>
-                  <option value="medium">Средний</option>
-                  <option value="high">Высокий</option>
-                </select>
-              </div>
-              <div className="form-group" style={{ flex: 1 }}><label>Дедлайн</label><input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })} /></div>
-            </div>
-            {taskError && <p className="error-msg">{taskError}</p>}
-            <button type="submit" className="btn btn-primary">Создать</button>
-          </form>
-        )}
-
-        <div className={styles.filters}>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="">Все статусы</option>
-            <option value="new">New</option>
-            <option value="on_discussion">On discussion</option>
-            <option value="approved">Approved</option>
-            <option value="in_progress">In progress</option>
-            <option value="complete">Complete</option>
-            <option value="testing">Testing</option>
-            <option value="to_review">To review</option>
-            <option value="ready_to_merge">Ready to merge</option>
-            <option value="closed">Closed</option>
-            <option value="disapproved">Disapproved</option>
-          </select>
-          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
-            <option value="">Все приоритеты</option>
-            <option value="low">Низкий</option>
-            <option value="medium">Средний</option>
-            <option value="high">Высокий</option>
-          </select>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Название</th>
-              <th>Статус</th>
-              <th>Приоритет</th>
-              <th>Исполнитель</th>
-              <th>Дедлайн</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks.map((t) => (
-              <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/tasks/${t.id}`)}>
-                <td>{t.title}</td>
-                <td><StatusBadge status={t.status} /></td>
-                <td>{PRIORITY_LABELS[t.priority] || t.priority}</td>
-                <td>{t.assignee?.full_name || '—'}</td>
-                <td>{t.deadline || '—'}</td>
-              </tr>
-            ))}
-            {tasks.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Нет задач</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

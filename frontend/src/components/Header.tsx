@@ -28,7 +28,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
       </nav>
       <div className={styles.userInfo}>
         <span className={styles.name}>{user.full_name}</span>
-        <span className={styles.role}>{user.role === 'admin' ? 'Админ' : 'Участник'}</span>
+        {/* ROLE_DISABLED: <span className={styles.role}>{user.role === 'admin' ? 'Админ' : 'Участник'}</span> */}
         <button onClick={handleLogout} className={styles.logoutBtn}>Выйти</button>
       </div>
     </header>

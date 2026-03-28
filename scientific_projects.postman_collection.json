@@ -1,0 +1,689 @@
+{
+	"info": {
+		"name": "Scientific Projects API",
+		"description": "Коллекция для проверки всех эндпоинтов Scientific Project Manager",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{"key": "base_url", "value": "http://localhost:8000"},
+		{"key": "access", "value": ""},
+		{"key": "refresh", "value": ""},
+		{"key": "project_id", "value": ""},
+		{"key": "task_id", "value": ""}
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Регистрация",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"Test1234!\",\n    \"full_name\": \"Иванов Иван Иванович\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/users/register/", "host": ["{{base_url}}"], "path": ["api","v1","users","register",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 201', () => pm.response.to.have.status(201));",
+									"const data = pm.response.json();",
+									"if (data.tokens) {",
+									"    pm.environment.set('access', data.tokens.access);",
+									"    pm.environment.set('refresh', data.tokens.refresh);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Логин",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"Test1234!\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/users/login/", "host": ["{{base_url}}"], "path": ["api","v1","users","login",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const data = pm.response.json();",
+									"if (data.tokens) {",
+									"    pm.environment.set('access', data.tokens.access);",
+									"    pm.environment.set('refresh', data.tokens.refresh);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Логаут",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{refresh}}\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/users/logout/", "host": ["{{base_url}}"], "path": ["api","v1","users","logout",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 205', () => pm.response.to.have.status(205));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Обновить токен",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh\": \"{{refresh}}\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/users/token/refresh/", "host": ["{{base_url}}"], "path": ["api","v1","users","token","refresh",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const data = pm.response.json();",
+									"if (data.access) pm.environment.set('access', data.access);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Список проектов",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/projects/", "host": ["{{base_url}}"], "path": ["api","v1","projects",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Создать проект",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Научный проект 2024\",\n    \"area\": \"Информатика\",\n    \"goal\": \"Разработка системы управления задачами\",\n    \"start_date\": \"2024-01-01\",\n    \"end_date\": \"2024-12-31\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/projects/", "host": ["{{base_url}}"], "path": ["api","v1","projects",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 201', () => pm.response.to.have.status(201));",
+									"const data = pm.response.json();",
+									"pm.environment.set('project_id', data.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Получить проект",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Изменить статус проекта на Завершен",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"done\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('status=done', () => pm.expect(pm.response.json().status).to.eql('done'));",
+									"pm.test('status_display=Завершен', () => pm.expect(pm.response.json().status_display).to.eql('Завершен'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "Список задач проекта",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}","tasks",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Создать задачу",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Реализовать API авторизации\",\n    \"description\": \"Разработать эндпоинты регистрации и входа\",\n    \"technical_spec\": \"JWT, срок 2 недели\",\n    \"deadline\": \"2024-06-30\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}","tasks",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 201', () => pm.response.to.have.status(201));",
+									"const data = pm.response.json();",
+									"pm.test('status=todo', () => pm.expect(data.status).to.eql('todo'));",
+									"pm.test('status_display=К выполнению', () => pm.expect(data.status_display).to.eql('К выполнению'));",
+									"pm.environment.set('task_id', data.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Детали задачи",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Взять задачу в работу (todo → in_progress)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"in_progress\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/status/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","status",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('status=in_progress', () => pm.expect(pm.response.json().status).to.eql('in_progress'));",
+									"pm.test('status_display=В процессе', () => pm.expect(pm.response.json().status_display).to.eql('В процессе'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Завершить задачу (in_progress → done)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"done\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/status/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","status",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('status=done', () => pm.expect(pm.response.json().status).to.eql('done'));",
+									"pm.test('status_display=Завершена', () => pm.expect(pm.response.json().status_display).to.eql('Завершена'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Недопустимый переход (todo → done) — негативный",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"done\"\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/status/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","status",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 400', () => pm.response.to.have.status(400));",
+									"pm.test('has error key', () => pm.expect(pm.response.json()).to.have.property('error'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Назначить исполнителя",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"assignee_id\": 1\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/assignee/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","assignee",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "История изменений задачи",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/history/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","history",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Прикрепить файл к задаче",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "file", "type": "file", "src": ""}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/attachments/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","attachments",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Прикрепить файл — недопустимый формат (негативный)",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "file", "type": "file", "src": ""}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/attachments/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}","attachments",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Удалить задачу",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/", "host": ["{{base_url}}"], "path": ["api","v1","tasks","{{task_id}}",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Library",
+			"item": [
+				{
+					"name": "Список файлов проекта",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/literature/files/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}","literature","files",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Загрузить файл",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "file", "type": "file", "src": ""},
+								{"key": "description", "value": "Введение в машинное обучение", "type": "text"}
+							]
+						},
+						"url": {"raw": "{{base_url}}/api/v1/projects/{{project_id}}/literature/files/", "host": ["{{base_url}}"], "path": ["api","v1","projects","{{project_id}}","literature","files",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 201', () => pm.response.to.have.status(201));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Поиск по библиотеке",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}/literature/search/?q=машинное обучение",
+							"host": ["{{base_url}}"],
+							"path": ["api","v1","projects","{{project_id}}","literature","search",""],
+							"query": [{"key": "q", "value": "машинное обучение"}]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Поиск — пустой запрос (негативный)",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}/literature/search/?q=",
+							"host": ["{{base_url}}"],
+							"path": ["api","v1","projects","{{project_id}}","literature","search",""],
+							"query": [{"key": "q", "value": ""}]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "VK",
+			"item": [
+				{
+					"name": "Получить URL авторизации VK",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {"raw": "{{base_url}}/api/v1/vk/auth/", "host": ["{{base_url}}"], "path": ["api","v1","vk","auth",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('has auth_url', () => pm.expect(pm.response.json()).to.have.property('auth_url'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Опубликовать пост во ВКонтакте",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project_id\": {{project_id}},\n    \"text\": \"Наш научный проект делает успехи!\",\n    \"owner_id\": -123456789\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/vk/publish/", "host": ["{{base_url}}"], "path": ["api","v1","vk","publish",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Публикация без авторизации VK (негативный)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project_id\": 1,\n    \"text\": \"Тест\",\n    \"owner_id\": -1\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/vk/publish/", "host": ["{{base_url}}"], "path": ["api","v1","vk","publish",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Публикация с пустым текстом (негативный)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Authorization", "value": "Bearer {{access}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"project_id\": 1,\n    \"text\": \"\",\n    \"owner_id\": -1\n}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/vk/publish/", "host": ["{{base_url}}"], "path": ["api","v1","vk","publish",""]}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "История публикаций",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vk/history/?project_id={{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api","v1","vk","history",""],
+							"query": [{"key": "project_id", "value": "{{project_id}}"}]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('is array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}

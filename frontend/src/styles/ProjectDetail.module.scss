@@ -1,8 +1,17 @@
-.info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
 .infoItem { font-size: 0.9rem; span { font-weight: 600; } }
 .section { margin-bottom: 24px; }
 .sectionTitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-.filters { display: flex; gap: 12px; margin-bottom: 16px; align-items: center;
+.filters { display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;
   select { padding: 6px 10px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 0.85rem; }
 }
 .memberList { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -14,4 +23,30 @@
 .badgePending {
   display: inline-block; background: #b2bec3; color: #fff;
   padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;
+}
+
+/* Вкладки */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #dfe6e9;
+  margin-bottom: 1.5rem;
+}
+.tab {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #636e72;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover { color: #2d3436; }
+}
+.tabActive {
+  color: #2e75b6;
+  border-bottom-color: #2e75b6;
+  font-weight: 600;
 }

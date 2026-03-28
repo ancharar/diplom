@@ -92,7 +92,8 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
   if (loading) return <Loader />;
   if (!task) return <p>Задача не найдена</p>;
 
-  const canEdit = user?.id === task.created_by.id || user?.role === 'admin';
+  // ROLE_DISABLED: убрана проверка user?.role === 'admin'
+  const canEdit = user?.id === task.created_by.id;
 
   return (
     <div className="container">

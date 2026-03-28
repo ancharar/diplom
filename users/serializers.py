@@ -19,10 +19,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'full_name', 'password', 'role')
+        fields = ('id', 'email', 'full_name', 'password')
+        # ROLE_DISABLED: убрано 'role' из fields
         extra_kwargs = {
             'full_name': {'required': True},
-            'role': {'required': False},
+            # ROLE_DISABLED: 'role': {'required': False},
         }
 
     def validate_email(self, value: str) -> str:
@@ -42,8 +43,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'full_name', 'role', 'is_active', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'email', 'role', 'is_active', 'created_at', 'updated_at')
+        fields = ('id', 'email', 'full_name', 'is_active', 'created_at', 'updated_at')
+        # ROLE_DISABLED: убрано 'role' из fields
+        read_only_fields = ('id', 'email', 'is_active', 'created_at', 'updated_at')
 
 
 class LoginSerializer(serializers.Serializer):

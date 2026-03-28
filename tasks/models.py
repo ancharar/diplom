@@ -1,34 +1,27 @@
 """Модели приложения tasks."""
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 TASK_STATUS_CHOICES = [
-    ('new', 'New'),
-    ('on_discussion', 'On discussion'),
-    ('approved', 'Approved'),
-    ('in_progress', 'In progress'),
-    ('complete', 'Complete'),
-    ('testing', 'Testing'),
-    ('to_review', 'To review'),
-    ('ready_to_merge', 'Ready to merge'),
-    ('closed', 'Close'),
-    ('disapproved', 'Disapprove'),
-]
-
-PRIORITY_CHOICES = [
-    ('low', 'Низкий'),
-    ('medium', 'Средний'),
-    ('high', 'Высокий'),
+    ('todo', 'К выполнению'),
+    ('in_progress', 'В процессе'),
+    ('done', 'Завершена'),
 ]
 
 
 class Task(models.Model):
-    """Задача проекта с жизненным циклом из 10 состояний."""
+    """Задача проекта с жизненным циклом из 3 состояний."""
 
     title = models.CharField('Название', max_length=255)
-    description = models.TextField('Техническое задание', blank=True)
+    description = models.TextField('Описание', blank=True)
+    technical_spec = models.TextField(
+        verbose_name='Техническое задание',
+        blank=True, default='',
+    )
     project = models.ForeignKey(
         'projects.Project',
         on_delete=models.CASCADE,
@@ -50,10 +43,7 @@ class Task(models.Model):
         verbose_name='Автор',
     )
     status = models.CharField(
-        'Статус', max_length=20, choices=TASK_STATUS_CHOICES, default='new',
-    )
-    priority = models.CharField(
-        'Приоритет', max_length=10, choices=PRIORITY_CHOICES, default='medium',
+        'Статус', max_length=20, choices=TASK_STATUS_CHOICES, default='todo',
     )
     deadline = models.DateField('Дедлайн', null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
@@ -64,8 +54,53 @@ class Task(models.Model):
         verbose_name_plural = 'Задачи'
         ordering = ['-created_at']
 
+    def clean(self):
+        if self.deadline and self.deadline < timezone.now().date():
+            raise ValidationError(
+                {'deadline': 'Срок выполнения не может быть раньше текущей даты'}
+            )
+
     def __str__(self) -> str:
         return self.title
+
+
+class TaskAttachment(models.Model):
+    """Вложение задачи (файл или ссылка)."""
+
+    ATTACHMENT_TYPE_CHOICES = [
+        ('file', 'Файл'),
+        ('link', 'Ссылка'),
+    ]
+
+    task = models.ForeignKey(
+        'Task', on_delete=models.CASCADE, related_name='attachments',
+    )
+    attachment_type = models.CharField(
+        'Тип', max_length=10,
+        choices=ATTACHMENT_TYPE_CHOICES, default='file',
+    )
+    file = models.FileField(
+        upload_to='task_attachments/%Y/%m/',
+        null=True, blank=True,
+    )
+    file_name = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+    url = models.URLField('Ссылка', blank=True)
+    description = models.CharField(max_length=500, blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Вложение задачи'
+        verbose_name_plural = 'Вложения задач'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.attachment_type == 'link':
+            return self.url
+        return self.file_name
 
 
 class TaskHistory(models.Model):

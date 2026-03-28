@@ -1,13 +1,16 @@
 """Представления (views) приложения projects."""
 
+from django.db.models import Count, Exists, OuterRef
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import JoinRequest, Project
-from .permissions import IsProjectAdmin, IsProjectMember, IsProjectOwner
+from .models import JoinRequest, Project, ProjectMembership
+from .permissions import IsProjectMember, IsProjectOwner
+# ROLE_DISABLED: IsProjectAdmin больше не импортируется, используем IsProjectOwner
 from .serializers import (
     AddMemberSerializer,
     JoinRequestCreateSerializer,
@@ -44,12 +47,13 @@ class ProjectListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request: Request) -> Response:
-        """Создание нового проекта (только администраторы)."""
-        if request.user.role != 'admin':
-            return Response(
-                {'detail': 'Только администраторы могут создавать проекты.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        """Создание нового проекта (любой авторизованный пользователь)."""
+        # ROLE_DISABLED: Раньше создание проекта было доступно только admin
+        # if request.user.role != 'admin':
+        #     return Response(
+        #         {'detail': 'Только администраторы могут создавать проекты.'},
+        #         status=status.HTTP_403_FORBIDDEN,
+        #     )
         serializer = ProjectCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         project = create_project(request.user, serializer.validated_data)
@@ -62,7 +66,26 @@ class ProjectCatalogView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request: Request) -> Response:
-        projects = Project.objects.all().select_related('owner')
+        user = request.user
+        projects = (
+            Project.objects.all()
+            .select_related('owner')
+            .annotate(
+                _members_count=Count('memberships'),
+                _is_member=Exists(
+                    ProjectMembership.objects.filter(
+                        project=OuterRef('pk'), user=user,
+                    )
+                ),
+                _has_pending_request=Exists(
+                    JoinRequest.objects.filter(
+                        project=OuterRef('pk'),
+                        user=user,
+                        status='pending',
+                    )
+                ),
+            )
+        )
         serializer = ProjectCatalogSerializer(
             projects, many=True, context={'request': request},
         )
@@ -140,7 +163,7 @@ class ProjectMemberView(APIView):
 
     def get_project(self, pk: int) -> Project:
         """Получение проекта по id."""
-        return Project.objects.get(pk=pk)
+        return Project.objects.select_related('owner').get(pk=pk)
 
     def post(self, request: Request, pk: int) -> Response:
         """Добавление участника в проект (только владелец)."""
@@ -223,7 +246,8 @@ class ProjectJoinRequestListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        perm = IsProjectAdmin()
+        # ROLE_DISABLED: заменено IsProjectAdmin на IsProjectOwner
+        perm = IsProjectOwner()
         if not perm.has_object_permission(request, self, project):
             return Response(
                 {'detail': perm.message},
@@ -275,7 +299,8 @@ class ProjectJoinRequestReviewView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        perm = IsProjectAdmin()
+        # ROLE_DISABLED: заменено IsProjectAdmin на IsProjectOwner
+        perm = IsProjectOwner()
         if not perm.has_object_permission(request, self, project):
             return Response(
                 {'detail': perm.message},
