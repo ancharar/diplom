@@ -1,31 +1,48 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+// frontend/src/api/client.ts
+
+import axios, { type InternalAxiosRequestConfig, type AxiosError } from 'axios';
+
+// Интерфейс для расширенной конфигурации
+interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+  _retryCount?: number;
+}
+
+// Базовый URL API
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 const client = axios.create({
-  baseURL: 'http://localhost:8000/api/v1',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Retry конфигурация (UI_NF3)
+// Конфигурация ретраев
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
-client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Request interceptor: добавляем токен авторизации
+client.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
+// Response interceptor: обработка ошибок и обновление токена
 client.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const config = error.config as InternalAxiosRequestConfig & {
-      _retry?: boolean;
-      _retryCount?: number;
-    };
+  async (error: AxiosError) => {
+    const config = error.config as ExtendedAxiosRequestConfig;
+    
+    if (!config) {
+      return Promise.reject(error);
+    }
 
-    // Retry для сетевых ошибок и 5xx (НЕ для 4xx)
+    // Ретраи для сетевых ошибок и ошибок сервера (5xx)
     const isRetryable =
       error.code === 'ERR_NETWORK' ||
       error.code === 'ECONNABORTED' ||
@@ -35,32 +52,42 @@ client.interceptors.response.use(
       config._retryCount = config._retryCount || 0;
       if (config._retryCount < MAX_RETRIES) {
         config._retryCount += 1;
-        await new Promise((res) =>
-          setTimeout(res, RETRY_DELAY * config._retryCount!),
-        );
+        const delay = RETRY_DELAY * config._retryCount;
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return client(config);
       }
     }
 
-    // 401 — обновление токена
+    // Обработка 401 Unauthorized - обновление токена
     if (error.response?.status === 401) {
-      const refresh = localStorage.getItem('refresh');
-      if (refresh && !config._retry) {
+      const refreshToken = localStorage.getItem('refresh');
+      
+      if (refreshToken && !config._retry) {
         config._retry = true;
+        
         try {
-          const { data } = await axios.post(
-            'http://localhost:8000/api/v1/users/token/refresh/',
-            { refresh },
+          const response = await axios.post(
+            `${API_BASE_URL}/users/token/refresh/`,
+            { refresh: refreshToken }
           );
-          localStorage.setItem('access', data.access);
-          config.headers.Authorization = `Bearer ${data.access}`;
+          
+          const { access } = response.data;
+          localStorage.setItem('access', access);
+          
+          // Повторяем исходный запрос с новым токеном
+          if (config.headers) {
+            config.headers.Authorization = `Bearer ${access}`;
+          }
           return client(config);
-        } catch {
+        } catch (refreshError) {
+          // Если обновить токен не удалось - разлогиниваем пользователя
           localStorage.removeItem('access');
           localStorage.removeItem('refresh');
           window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
       } else {
+        // Токена нет или ретрай уже был - разлогиниваемся
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');
         window.location.href = '/login';
@@ -68,7 +95,7 @@ client.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );
 
 export default client;

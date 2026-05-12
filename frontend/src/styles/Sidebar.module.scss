@@ -1,0 +1,321 @@
+.sidebar {
+  width: 280px;
+  height: 100vh; // меняем min-height на фиксированную высоту
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; // добавляем скролл только если контента больше, но он не будет скроллиться
+  overflow-x: hidden;
+
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  border-right: 1px solid rgba(31, 139, 117, 0.1);
+
+  transition: width 0.28s ease, padding 0.28s ease;
+  flex-shrink: 0; 
+  position: sticky; 
+  top: 0;
+
+  // Убираем скролл, если контент помещается
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 40px;
+  min-height: 52px;
+  flex-shrink: 0; // не сжимается
+}
+
+.logoBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  transition: all 0.25s ease;
+  flex-shrink: 1;
+}
+
+.logoIcon {
+  color: #1f8b75;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+  width: 32px;
+  height: 32px;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: 700;
+  color: #17323b;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+}
+
+.toggleButton {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 12px;
+  background: rgba(31, 139, 117, 0.08);
+  color: #1f8b75;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.2s ease;
+
+  svg {
+    font-size: 22px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    background: rgba(31, 139, 117, 0.15);
+    transform: scale(1.02);
+  }
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.navItem {
+  position: relative;
+  height: 48px;
+  padding: 0 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  color: #5f747c;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+
+  border-radius: 12px;
+  transition: all 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 22px;
+    color: #8aa4ac;
+    transition: all 0.2s ease;
+  }
+
+  span {
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    font-weight: 500;
+  }
+
+  &:hover {
+    background: rgba(31, 139, 117, 0.07);
+    color: #1f8b75;
+    text-decoration: none;
+
+    svg {
+      color: #1f8b75;
+    }
+  }
+}
+
+.active {
+  background: rgba(31, 139, 117, 0.1);
+  color: #17323b;
+  font-weight: 600;
+
+  svg {
+    color: #1f8b75;
+  }
+
+  span {
+    font-weight: 600;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 12px;
+    width: 4px;
+    height: 24px;
+    border-radius: 0 4px 4px 0;
+    background: #1f8b75;
+  }
+}
+
+.logoutButton {
+  margin-top: auto;
+  height: 48px;
+  padding: 0 16px;
+  margin-top: 12px;
+  flex-shrink: 0; // не сжимается
+
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  color: #b45a5a;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 22px;
+  }
+
+  span {
+    white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    font-weight: 500;
+  }
+
+  &:hover {
+    background: rgba(180, 90, 90, 0.08);
+  }
+}
+
+// Сворачиваемое состояние
+.collapsed {
+  width: 88px;
+  padding: 32px 16px;
+
+  .top {
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .logoBlock {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .logoText {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-8px);
+    width: 0;
+    overflow: hidden;
+    display: none;
+  }
+
+  .logoIcon {
+    transform: scale(1.05);
+  }
+
+  .toggleButton {
+    width: 44px;
+    height: 44px;
+
+    svg {
+      transform: rotate(180deg);
+    }
+  }
+
+  .navItem {
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+    
+    span {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-8px);
+      width: 0;
+      overflow: hidden;
+      display: none;
+    }
+  }
+
+  .logoutButton {
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+
+    span {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-8px);
+      width: 0;
+      overflow: hidden;
+      display: none;
+    }
+  }
+
+  .active::before {
+    left: -16px;
+    top: 12px;
+    width: 4px;
+    height: 24px;
+  }
+}
+
+// Адаптивность для планшетов
+@media (max-width: 768px) {
+  .sidebar {
+    width: 88px;
+    padding: 24px 16px;
+  }
+
+  .top {
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .logoText {
+    display: none;
+  }
+
+  .logoBlock {
+    justify-content: center;
+  }
+
+  .navItem {
+    justify-content: center;
+    padding: 0;
+    
+    span {
+      display: none;
+    }
+  }
+
+  .logoutButton {
+    justify-content: center;
+    padding: 0;
+    
+    span {
+      display: none;
+    }
+  }
+
+  .active::before {
+    left: -16px;
+  }
+}

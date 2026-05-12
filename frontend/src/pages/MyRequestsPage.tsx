@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import Loader from '../components/Loader';
-import type { JoinRequest, User } from '../types';
-
-interface Props {
-  user: User | null;
-}
+import type { JoinRequest } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
   analyst: 'Аналитик',
@@ -27,7 +23,7 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: '#d63031',
 };
 
-export default function MyRequestsPage({ user }: Props) {
+export default function MyRequestsPage() {
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,15 +77,15 @@ export default function MyRequestsPage({ user }: Props) {
                 }}>
                   {STATUS_LABELS[r.status] || r.status}
                 </span>
-              </td>
+               </td>
               <td>{new Date(r.created_at).toLocaleDateString()}</td>
               <td>{r.reviewed_by?.full_name || '—'}</td>
               <td>
                 {r.status === 'pending' && (
                   <button className="btn btn-sm" onClick={() => handleCancel(r.id)}>Отозвать</button>
                 )}
-              </td>
-            </tr>
+               </td>
+             </tr>
           ))}
           {requests.length === 0 && (
             <tr><td colSpan={6} style={{ textAlign: 'center' }}>Нет заявок</td></tr>

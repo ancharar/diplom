@@ -1,9 +1,208 @@
-.wrapper {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+.authShell {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(
+      circle at 50% -18%,
+      rgba(255, 245, 238, 0.95) 0%,
+      rgba(235, 246, 255, 0.9) 22%,
+      rgba(238, 250, 246, 0.72) 42%,
+      transparent 58%
+    ),
+    linear-gradient(135deg, #f3f8ff 0%, #edf9f7 56%, #ffffff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
 }
-.card {
-  background: #fff; padding: 36px; border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08); width: 100%; max-width: 400px;
+
+.authContent {
+  width: 100%;
+  max-width: 560px;   
+  min-height: 760px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.title { text-align: center; margin-bottom: 24px; font-size: 1.4rem; }
-.footer { text-align: center; margin-top: 16px; font-size: 0.9rem; }
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 84px; 
+}
+
+.logoIcon {
+  color: #1f8b75;
+  margin-bottom: 16px;
+}
+
+.brandTitle {
+  font-size: 56px !important;   
+  font-weight: 400 !important;
+  line-height: 1.05 !important;
+  color: #1d2f38;
+  letter-spacing: -1px;
+}
+
+.brandSubtitle {
+  margin-top: 18px !important;
+  font-size: 12px !important;   
+  font-weight: 700 !important;
+  letter-spacing: 2.4px !important;
+  text-transform: uppercase;
+  color: #4e6972;
+}
+
+.form {
+  width: 400px; 
+  display: flex;
+  flex-direction: column;
+  gap: 20px;    
+}
+
+.submitButton {
+  margin-top: 42px !important;
+  height: 64px !important;   
+  border-radius: 0 !important;
+  background: #1f8b75 !important;
+  color: #ffffff !important;
+  font-size: 18px !important; 
+  font-weight: 500 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+
+  &:hover {
+    background: #176f5d !important;
+    box-shadow: none !important;
+  }
+
+  &:disabled {
+    background: #a6cfc6 !important;
+  }
+}
+
+.linkText {
+  margin-top: 22px !important;
+  text-align: center;
+  font-size: 16px !important;  
+  color: #6d7d83;
+
+  a {
+    color: #1f8b75;
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.error {
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  padding: 10px 12px !important;
+}
+
+.copyright {
+  margin-top: 160px !important;
+  text-align: center;
+  font-size: 13px !important;
+  color: #a0a9ad;
+}
+
+:global {
+  .MuiTextField-root {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .MuiInputLabel-root {
+    font-size: 16px !important;   
+    color: #4f6269 !important;
+
+    &.Mui-focused {
+      color: #1f8b75 !important;
+    }
+  }
+
+  .MuiOutlinedInput-root {
+    height: 64px;                
+    font-size: 17px !important;   
+    border-radius: 0 !important;
+    background: rgba(255, 255, 255, 0.95);
+
+    fieldset {
+      border-color: transparent !important;
+      border-radius: 0 !important;
+    }
+
+    &:hover fieldset {
+      border-color: #d1e4df !important;
+    }
+
+    &.Mui-focused fieldset {
+      border-color: #1f8b75 !important;
+      border-width: 1px !important;
+    }
+  }
+
+  .MuiInputBase-input {
+    padding: 18px 14px !important; 
+    font-size: 17px !important;
+  }
+
+  .MuiInputAdornment-root {
+    .MuiSvgIcon-root {
+      color: #8aa4ac;
+      font-size: 24px !important; 
+    }
+  }
+
+  .MuiIconButton-root {
+    color: #8aa4ac;
+    padding: 8px !important;
+  }
+
+  .MuiAlert-standardError {
+    border-radius: 0 !important;
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .authShell {
+    padding: 24px;
+  }
+
+  .authContent {
+    max-width: 360px;
+    min-height: 620px;
+  }
+
+  .brand {
+    margin-bottom: 56px;
+  }
+
+  .brandTitle {
+    font-size: 40px !important;
+  }
+
+  .brandSubtitle {
+    font-size: 10px !important;
+  }
+
+  .form {
+    width: 320px;
+  }
+
+  .submitButton {
+    height: 56px !important;
+    font-size: 16px !important;
+  }
+
+  .copyright {
+    margin-top: 100px !important;
+  }
+}

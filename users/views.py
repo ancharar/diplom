@@ -24,8 +24,8 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Генерируем JWT-токены для автоматического входа после регистрации
         refresh = RefreshToken.for_user(user)
+
         return Response(
             {
                 'user': UserSerializer(user).data,
@@ -44,7 +44,6 @@ class LoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request: Request) -> Response:
-        """Проверка учётных данных и выдача JWT-токенов."""
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -72,6 +71,7 @@ class LoginView(APIView):
             )
 
         refresh = RefreshToken.for_user(user)
+
         return Response({
             'user': UserSerializer(user).data,
             'tokens': {
@@ -82,24 +82,40 @@ class LoginView(APIView):
 
 
 class MeView(APIView):
-    """Получение и обновление профиля текущего пользователя."""
+    """
+    Получение и обновление профиля текущего пользователя.
+    Здесь же хранится анкета пользователя.
+    """
 
     permission_classes = (IsAuthenticated,)
 
     def get(self, request: Request) -> Response:
-        """Возврат данных текущего пользователя."""
+        """Получить текущего пользователя + анкету."""
         return Response(UserSerializer(request.user).data)
 
     def patch(self, request: Request) -> Response:
-        """Обновление профиля текущего пользователя."""
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        """
+        Обновление профиля пользователя (включая анкету).
+        Поддерживает частичное обновление.
+        """
+        serializer = UserSerializer(
+            request.user,
+            data=request.data,
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+
+        return Response({
+            "message": "Профиль успешно обновлён",
+            "user": serializer.data
+        })
 
 
 class LogoutView(APIView):
-    """Выход из системы — добавление refresh-токена в чёрный список."""
+    """
+    Выход из системы — добавление refresh-токена в blacklist.
+    """
 
     permission_classes = (IsAuthenticated,)
 
@@ -109,4 +125,7 @@ class LogoutView(APIView):
             token.blacklist()
             return Response(status=205)
         except Exception:
-            return Response({'error': 'Неверный токен'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': 'Неверный токен'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

@@ -1,13 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import client from '../api/client';
 import Loader from '../components/Loader';
 import StatusBadge from '../components/StatusBadge';
-import type { Task, HistoryEntry, User } from '../types';
+import type { HistoryEntry, Task, User } from '../types';
 import styles from '../styles/TaskDetail.module.scss';
 
 interface TaskDetailPageProps {
   user: User | null;
+}
+
+interface ProjectMember {
+  id: number;
+  user?: User;
+  full_name?: string;
+  email?: string;
+  project_role?: string;
+}
+
+interface ProjectDetailResponse {
+  id: number;
+  members?: ProjectMember[];
+  participants?: ProjectMember[];
+  users?: User[];
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -16,177 +31,492 @@ const PRIORITY_LABELS: Record<string, string> = {
   high: 'Высокий',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
-  on_discussion: 'On discussion',
-  approved: 'Approved',
-  in_progress: 'In progress',
-  complete: 'Complete',
-  testing: 'Testing',
-  to_review: 'To review',
-  ready_to_merge: 'Ready to merge',
-  closed: 'Closed',
-  disapproved: 'Disapproved',
+const PRIORITY_COLORS: Record<string, string> = {
+  low: '#8aa4ac',
+  medium: '#f59e0b',
+  high: '#e74c3c',
 };
+
+const STATUS_LABELS: Record<string, string> = {
+  new: 'Новая',
+  on_discussion: 'На обсуждении',
+  approved: 'Утверждена',
+  in_progress: 'В процессе',
+  complete: 'Завершена',
+  testing: 'Тестирование',
+  to_review: 'На проверке',
+  ready_to_merge: 'Готово к слиянию',
+  closed: 'Закрыта',
+  disapproved: 'Отклонена',
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  status: 'Статус',
+  priority: 'Приоритет',
+  assignee: 'Исполнитель',
+  assignee_id: 'Исполнитель',
+  title: 'Название',
+  description: 'Описание',
+  deadline: 'Дедлайн',
+};
+
+function getErrorMessage(err: unknown, fallback: string) {
+  const data = (
+    err as {
+      response?: {
+        data?: unknown;
+      };
+    }
+  ).response?.data;
+
+  if (!data) return fallback;
+
+  if (typeof data === 'string') {
+    if (data.trim().startsWith('<!DOCTYPE html>')) {
+      return fallback;
+    }
+    return data;
+  }
+
+  if (typeof data === 'object') {
+    return Object.values(data as Record<string, string[] | string>)
+      .flat()
+      .join('. ');
+  }
+
+  return fallback;
+}
+
+function getProjectId(task: Task) {
+  const project = task.project as number | { id: number } | null;
+
+  if (typeof project === 'object' && project !== null) {
+    return project.id;
+  }
+
+  return project;
+}
+
+function normalizeProjectMembers(data: unknown) {
+  const rawMembers = Array.isArray(data)
+    ? data
+    : (data as ProjectDetailResponse).members ||
+      (data as ProjectDetailResponse).participants ||
+      (data as ProjectDetailResponse).users ||
+      [];
+
+  return rawMembers
+    .map((item) => {
+      const member = item as ProjectMember | User;
+
+      if ('user' in member && member.user) {
+        return {
+          id: member.user.id,
+          full_name: member.user.full_name || member.user.email,
+        };
+      }
+
+      return {
+        id: member.id,
+        full_name: member.full_name || member.email || `Пользователь #${member.id}`,
+      };
+    })
+    .filter((member) => Boolean(member.id));
+}
 
 export default function TaskDetailPage({ user }: TaskDetailPageProps) {
   const { id } = useParams<{ id: string }>();
+
   const [task, setTask] = useState<Task | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [projectMembers, setProjectMembers] = useState<
+    { id: number; full_name: string }[]
+  >([]);
+
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', priority: 'medium', deadline: '' });
   const [error, setError] = useState('');
 
-  const fetchTask = async () => {
-    const { data } = await client.get<Task>(`/tasks/${id}/`);
-    setTask(data);
-    setForm({
-      title: data.title,
-      description: data.description || '',
-      priority: data.priority,
-      deadline: data.deadline || '',
-    });
-  };
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium',
+    deadline: '',
+    assignee_id: '',
+  });
 
-  const fetchHistory = async () => {
-    const { data } = await client.get<HistoryEntry[]>(`/tasks/${id}/history/`);
-    setHistory(data);
-  };
+  const loadProjectMembers = useCallback(async (projectId: number) => {
+    try {
+      const { data } = await client.get<ProjectMember[]>(
+        `/projects/${projectId}/members/`,
+      );
+      setProjectMembers(normalizeProjectMembers(data));
+    } catch {
+      try {
+        const { data } = await client.get<ProjectDetailResponse>(
+          `/projects/${projectId}/`,
+        );
+        setProjectMembers(normalizeProjectMembers(data));
+      } catch {
+        setProjectMembers([]);
+      }
+    }
+  }, []);
+
+  const fillTaskData = useCallback(
+    async (taskData: Task, historyData: HistoryEntry[]) => {
+      setTask(taskData);
+
+      setForm({
+        title: taskData.title,
+        description: taskData.description || '',
+        priority: taskData.priority,
+        deadline: taskData.deadline || '',
+        assignee_id: taskData.assignee?.id?.toString() || '',
+      });
+
+      setHistory(historyData);
+
+      const projectId = getProjectId(taskData);
+
+      if (projectId) {
+        await loadProjectMembers(projectId);
+      }
+    },
+    [loadProjectMembers],
+  );
+
+  const loadData = useCallback(async () => {
+    if (!id) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const [taskRes, historyRes] = await Promise.all([
+        client.get<Task>(`/tasks/${id}/`),
+        client.get<HistoryEntry[]>(`/tasks/${id}/history/`),
+      ]);
+
+      await fillTaskData(taskRes.data, historyRes.data);
+    } catch (err) {
+      console.error('Ошибка загрузки данных задачи:', err);
+      setError('Ошибка загрузки задачи');
+    } finally {
+      setLoading(false);
+    }
+  }, [id, fillTaskData]);
+
+  const refreshData = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const [taskRes, historyRes] = await Promise.all([
+        client.get<Task>(`/tasks/${id}/`),
+        client.get<HistoryEntry[]>(`/tasks/${id}/history/`),
+      ]);
+
+      await fillTaskData(taskRes.data, historyRes.data);
+    } catch (err) {
+      console.error('Ошибка обновления данных задачи:', err);
+    }
+  }, [id, fillTaskData]);
 
   useEffect(() => {
-    Promise.all([fetchTask(), fetchHistory()]).finally(() => setLoading(false));
-  }, [id]);
+    loadData();
+  }, [loadData]);
 
-  /* Обновить задачу */
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
     try {
-      const payload: Record<string, string> = { title: form.title, priority: form.priority };
-      if (form.description) payload.description = form.description;
-      if (form.deadline) payload.deadline = form.deadline;
+      const newAssigneeId = form.assignee_id ? Number(form.assignee_id) : null;
+      
+      const payload: Record<string, string | number | null> = {
+        title: form.title,
+        priority: form.priority,
+        description: form.description,
+        deadline: form.deadline || '',
+        assignee_id: newAssigneeId,
+      };
+
       await client.patch(`/tasks/${id}/`, payload);
+
       setEditMode(false);
-      fetchTask();
-      fetchHistory();
+      await refreshData();
     } catch (err) {
-      const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
-      setError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка обновления');
+      console.error('Ошибка обновления:', err);
+      setError(getErrorMessage(err, 'Ошибка обновления'));
     }
   };
 
-  /* Сменить статус */
+  // ✅ ИСПРАВЛЕНО: post → patch
   const handleTransition = async (newStatus: string) => {
     setError('');
+
     try {
-      await client.post(`/tasks/${id}/transition/`, { status: newStatus });
-      fetchTask();
-      fetchHistory();
+      await client.patch(`/tasks/${id}/status/`, {
+        status: newStatus,
+      });
+
+      await refreshData();
     } catch (err) {
-      const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
-      setError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка перехода');
+      setError(getErrorMessage(err, 'Ошибка перехода статуса'));
     }
   };
 
   if (loading) return <Loader />;
-  if (!task) return <p>Задача не найдена</p>;
 
-  // ROLE_DISABLED: убрана проверка user?.role === 'admin'
+  if (!task) {
+    return <div className={styles.notFound}>Задача не найдена</div>;
+  }
+
   const canEdit = user?.id === task.created_by.id;
 
+  const isOverdue =
+    task.deadline &&
+    new Date(task.deadline) < new Date() &&
+    task.status !== 'closed' &&
+    task.status !== 'complete';
+
   return (
-    <div className="container">
-      <h1 className="page-title">Задача #{task.id}</h1>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Задача #{task.id}</h1>
+        <p className={styles.subtitle}>{task.title}</p>
+      </div>
 
       <div className={styles.grid}>
-        {/* Левая колонка: информация о задаче */}
-        <div className="card">
+        <div className={styles.card}>
           {editMode ? (
-            <form onSubmit={handleUpdate}>
-              <div className="form-group"><label>Название</label><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></div>
-              <div className="form-group"><label>Описание</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Приоритет</label>
-                  <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+            <form onSubmit={handleUpdate} className={styles.form}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Название</label>
+                <input
+                  className={styles.input}
+                  value={form.title}
+                  onChange={(e) =>
+                    setForm({ ...form, title: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Описание</label>
+                <textarea
+                  className={styles.textarea}
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className={styles.row}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Приоритет</label>
+                  <select
+                    className={styles.select}
+                    value={form.priority}
+                    onChange={(e) =>
+                      setForm({ ...form, priority: e.target.value })
+                    }
+                  >
                     <option value="low">Низкий</option>
                     <option value="medium">Средний</option>
                     <option value="high">Высокий</option>
                   </select>
                 </div>
-                <div className="form-group" style={{ flex: 1 }}><label>Дедлайн</label><input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} /></div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label}>Дедлайн</label>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={form.deadline}
+                    onChange={(e) =>
+                      setForm({ ...form, deadline: e.target.value })
+                    }
+                  />
+                </div>
               </div>
-              {error && <p className="error-msg">{error}</p>}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" className="btn btn-primary">Сохранить</button>
-                <button type="button" className="btn" onClick={() => setEditMode(false)}>Отмена</button>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Исполнитель</label>
+                <select
+                  className={styles.select}
+                  value={form.assignee_id}
+                  onChange={(e) =>
+                    setForm({ ...form, assignee_id: e.target.value })
+                  }
+                >
+                  <option value="">Не назначен</option>
+                  {projectMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {projectMembers.length === 0 && (
+                <div className={styles.errorMsg}>
+                  Участники проекта не загружены
+                </div>
+              )}
+
+              {error && <div className={styles.errorMsg}>{error}</div>}
+
+              <div className={styles.formActions}>
+                <button type="submit" className={styles.saveBtn}>
+                  Сохранить
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.cancelBtn}
+                  onClick={() => setEditMode(false)}
+                >
+                  Отмена
+                </button>
               </div>
             </form>
           ) : (
             <>
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Название</div>
-                {task.title}
+                <div className={styles.fieldValue}>{task.title}</div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Описание</div>
-                {task.description || '—'}
+                <div className={styles.fieldValue}>
+                  {task.description || '—'}
+                </div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Статус</div>
-                <StatusBadge status={task.status} />
+                <div className={styles.fieldValue}>
+                  <StatusBadge status={task.status} />
+                </div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Приоритет</div>
-                {PRIORITY_LABELS[task.priority] || task.priority}
+                <div className={styles.fieldValue}>
+                  <span
+                    className={styles.priorityBadge}
+                    style={{
+                      backgroundColor:
+                        (PRIORITY_COLORS[task.priority] || '#8aa4ac') + '20',
+                      color: PRIORITY_COLORS[task.priority] || '#8aa4ac',
+                    }}
+                  >
+                    {PRIORITY_LABELS[task.priority] || task.priority}
+                  </span>
+                </div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Исполнитель</div>
-                {task.assignee?.full_name || '—'}
+                <div className={styles.fieldValue}>
+                  {task.assignee?.full_name || '—'}
+                </div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Автор</div>
-                {task.created_by.full_name}
+                <div className={styles.fieldValue}>
+                  {task.created_by.full_name}
+                </div>
               </div>
+
               <div className={styles.field}>
                 <div className={styles.fieldLabel}>Дедлайн</div>
-                {task.deadline || '—'}
+                <div className={styles.fieldValue}>
+                  {task.deadline ? (
+                    <span className={isOverdue ? styles.overdue : ''}>
+                      {task.deadline}
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </div>
               </div>
+
               {canEdit && (
-                <button className="btn btn-primary" onClick={() => setEditMode(true)} style={{ marginTop: 8 }}>Редактировать</button>
+                <button
+                  className={styles.editBtn}
+                  onClick={() => setEditMode(true)}
+                >
+                  Редактировать задачу
+                </button>
               )}
-              {error && <p className="error-msg">{error}</p>}
+
+              {error && <div className={styles.errorMsg}>{error}</div>}
             </>
           )}
 
-          {/* Кнопки перехода статуса */}
-          {task.allowed_transitions.length > 0 && (
+          {task.allowed_transitions && task.allowed_transitions.length > 0 && (
             <div className={styles.transitions}>
-              {task.allowed_transitions.map((s) => (
-                <button key={s} className="btn" onClick={() => handleTransition(s)}>
-                  → {STATUS_LABELS[s] || s}
-                </button>
-              ))}
+              <div className={styles.transitionsLabel}>Изменить статус:</div>
+
+              <div className={styles.transitionsButtons}>
+                {task.allowed_transitions.map((status) => (
+                  <button
+                    key={status}
+                    className={styles.transitionBtn}
+                    onClick={() => handleTransition(status)}
+                  >
+                    → {STATUS_LABELS[status] || status}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Правая колонка: история */}
-        <div className="card">
-          <h3>История изменений</h3>
-          {history.length === 0 && <p>Нет записей</p>}
-          {history.map((h) => (
-            <div key={h.id} className={styles.historyItem}>
-              <div className="date">{new Date(h.changed_at).toLocaleString()}</div>
-              <div className="change">
-                <strong>{h.field_name}</strong>: {h.old_value || '—'}
-                <span className={styles.arrow}>→</span>
-                {h.new_value || '—'}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: '#636e72' }}>{h.changed_by.full_name}</div>
+        <div className={styles.card}>
+          <h3 className={styles.historyTitle}>История изменений</h3>
+
+          {history.length === 0 ? (
+            <div className={styles.emptyHistory}>Нет записей</div>
+          ) : (
+            <div className={styles.historyList}>
+              {history.map((h) => (
+                <div key={h.id} className={styles.historyItem}>
+                  <div className={styles.historyDate}>
+                    {new Date(h.changed_at).toLocaleString()}
+                  </div>
+
+                  <div className={styles.historyChange}>
+                    <strong>
+                      {FIELD_LABELS[h.field_name] || h.field_name}
+                    </strong>
+
+                    <div className={styles.historyValues}>
+                      <span className={styles.oldValue}>
+                        {h.old_value || '—'}
+                      </span>
+
+                      <span className={styles.arrow}>→</span>
+
+                      <span className={styles.newValue}>
+                        {h.new_value || '—'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.historyAuthor}>
+                    {h.changed_by.full_name}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

@@ -12,6 +12,13 @@ TASK_STATUS_CHOICES = [
     ('done', 'Завершена'),
 ]
 
+# 👇 ДОБАВЬТЕ ЭТОТ БЛОК
+TASK_PRIORITY_CHOICES = [
+    ('low', 'Низкий'),
+    ('medium', 'Средний'),
+    ('high', 'Высокий'),
+]
+
 
 class Task(models.Model):
     """Задача проекта с жизненным циклом из 3 состояний."""
@@ -45,6 +52,15 @@ class Task(models.Model):
     status = models.CharField(
         'Статус', max_length=20, choices=TASK_STATUS_CHOICES, default='todo',
     )
+    
+    # 👇 ДОБАВЬТЕ ЭТО ПОЛЕ
+    priority = models.CharField(
+        'Приоритет',
+        max_length=20,
+        choices=TASK_PRIORITY_CHOICES,
+        default='medium',
+    )
+    
     deadline = models.DateField('Дедлайн', null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)

@@ -23,7 +23,6 @@ class UserManager(BaseUserManager):
         self, email: str, full_name: str, password: str | None = None, **extra_fields
     ) -> 'User':
         """Создание суперпользователя."""
-        # ROLE_DISABLED: extra_fields.setdefault('role', 'admin')
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, full_name, password, **extra_fields)
@@ -32,15 +31,16 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     """Кастомная модель пользователя. Email используется для аутентификации."""
 
-    # ROLE_DISABLED: Деление на admin/member временно отключено (см. документ "Коллективная разработка")
-    # ROLE_CHOICES = [
-    #     ('admin', 'Администратор'),
-    #     ('member', 'Участник'),
-    # ]
-
     email = models.EmailField('Email', unique=True)
     full_name = models.CharField('ФИО', max_length=255)
-    # ROLE_DISABLED: role = models.CharField('Роль', max_length=10, choices=ROLE_CHOICES, default='member')
+
+    # 🔥 ДОБАВЛЯЕМ АНКЕТУ
+    university = models.CharField('Университет', max_length=255, blank=True)
+    position = models.CharField('Должность', max_length=255, blank=True)
+    bio = models.TextField('О себе', blank=True)
+    interests = models.JSONField('Интересы', default=list, blank=True)
+    avatar_url = models.URLField('Аватар', blank=True)
+
     is_active = models.BooleanField('Активен', default=True)
     is_staff = models.BooleanField('Доступ к админке', default=False)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)

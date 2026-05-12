@@ -1,15 +1,231 @@
 .header {
-  background: #fff;
-  border-bottom: 1px solid #dfe6e9;
-  padding: 0 24px;
+  height: 92px;
+  padding: 0 32px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
 }
-.nav { display: flex; gap: 20px; }
-.link { font-weight: 500; font-size: 0.95rem; color: #2d3436; &:hover { color: #2e75b6; text-decoration: none; } }
-.userInfo { display: flex; align-items: center; gap: 12px; }
-.name { font-weight: 500; font-size: 0.9rem; }
-.role { font-size: 0.8rem; color: #636e72; background: #f0f3f7; padding: 2px 8px; border-radius: 10px; }
-.logoutBtn { background: none; border: 1px solid #dfe6e9; padding: 4px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; &:hover { background: #f5f6fa; } }
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #17323b;
+  letter-spacing: -0.6px;
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  color: #6d7d83;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+// Кнопка "Создать проект"
+.createBtn {
+  height: 48px;
+  padding: 0 18px;
+
+  border: none;
+  border-radius: 16px;
+
+  background: #1f8b75;
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:hover {
+    background: #176f5d;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(31, 139, 117, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0px);
+  }
+}
+
+// Кнопка уведомлений
+.notificationBtn {
+  position: relative;
+
+  width: 52px;
+  height: 52px;
+
+  border: none;
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.9);
+  color: #8aa4ac;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 10px 28px rgba(41, 91, 123, 0.07);
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+
+  svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  &:hover {
+    color: #1f8b75;
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(31, 139, 117, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0px);
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+
+  border-radius: 999px;
+  background: #ff4d5f;
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// Карточка пользователя (кнопка перехода в профиль)
+.userCard {
+  height: 56px;
+  padding: 6px 16px 6px 8px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 28px rgba(41, 91, 123, 0.07);
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(31, 139, 117, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0px);
+  }
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+
+  border-radius: 14px;
+  background: #1f8b75;
+  color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  font-weight: 800;
+  transition: all 0.2s ease;
+}
+
+.userCard:hover .avatar {
+  background: #176f5d;
+  transform: scale(1.02);
+}
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #17323b;
+  white-space: nowrap;
+}
+
+.email {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #8aa4ac;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .header {
+    height: auto;
+    padding: 18px 20px;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .right {
+    gap: 10px;
+  }
+
+  .createBtn span,
+  .userText {
+    display: none;
+  }
+
+  .createBtn {
+    width: 52px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .userCard {
+    width: 56px;
+    padding: 7px;
+    justify-content: center;
+  }
+}
