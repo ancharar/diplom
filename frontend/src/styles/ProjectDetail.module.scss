@@ -1,52 +1,427 @@
-.info {
+// Основная сетка: две колонки
+.topGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
 
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
+// Верхняя панель с кнопками
+.topActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.actionBtn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid #238f76;
+  color: #238f76;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(35, 143, 118, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
-.infoItem { font-size: 0.9rem; span { font-weight: 600; } }
-.section { margin-bottom: 24px; }
-.sectionTitle { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-.filters { display: flex; gap: 0.75rem; margin-bottom: 1rem; align-items: center; flex-wrap: wrap;
-  select { padding: 6px 10px; border: 1px solid #dfe6e9; border-radius: 6px; font-size: 0.85rem; }
-}
-.memberList { display: flex; flex-wrap: wrap; gap: 8px; }
-.memberChip {
-  background: #f0f3f7; padding: 4px 12px; border-radius: 16px; font-size: 0.85rem;
-  display: flex; align-items: center; gap: 6px;
-}
-.removeBtn { background: none; border: none; color: #d63031; cursor: pointer; font-size: 1rem; }
-.badgePending {
-  display: inline-block; background: #b2bec3; color: #fff;
-  padding: 3px 10px; border-radius: 12px; font-size: 0.8rem;
+
+// Карточка информации о проекте
+.infoCard {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
-/* Вкладки */
+.projectTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #17323b;
+  margin: 0 0 20px 0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.infoItem {
+  font-size: 14px;
+  span {
+    font-weight: 600;
+    color: #1f8b75;
+    margin-right: 8px;
+  }
+}
+
+.infoItemFull {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  span {
+    font-weight: 600;
+    color: #1f8b75;
+    margin-right: 8px;
+  }
+}
+
+// Карточка участников
+.membersCard {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  
+  .cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #17323b;
+    }
+  }
+}
+
+.ownerBadge {
+  background: rgba(31, 139, 117, 0.1);
+  color: #1f8b75;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.memberChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8faf8;
+  padding: 8px 12px;
+  border-radius: 12px;
+}
+
+.memberName {
+  font-weight: 500;
+  color: #17323b;
+}
+
+.memberRole {
+  font-size: 12px;
+  color: #1f8b75;
+  background: rgba(31, 139, 117, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #b45a5a;
+  cursor: pointer;
+  font-size: 18px;
+  
+  &:hover {
+    color: #d63031;
+  }
+}
+
+.addMemberForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  
+  input, select {
+    padding: 8px 12px;
+    border: 1px solid #e2efeb;
+    border-radius: 10px;
+    font-size: 13px;
+    flex: 1;
+  }
+  
+  button {
+    white-space: nowrap;
+  }
+}
+
+// Вкладки
 .tabs {
   display: flex;
   gap: 0;
-  border-bottom: 2px solid #dfe6e9;
-  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e2efeb;
+  margin-bottom: 24px;
 }
+
 .tab {
-  padding: 10px 20px;
+  padding: 10px 24px;
   border: none;
   background: none;
-  font-size: 0.95rem;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  color: #636e72;
+  color: #8aa4ac;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  transition: color 0.2s, border-color 0.2s;
-
-  &:hover { color: #2d3436; }
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: #1f8b75;
+  }
 }
+
 .tabActive {
-  color: #2e75b6;
-  border-bottom-color: #2e75b6;
-  font-weight: 600;
+  color: #1f8b75;
+  border-bottom-color: #1f8b75;
+}
+
+.tabContent {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.tabHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  
+  select {
+    padding: 8px 12px;
+    border: 1px solid #e2efeb;
+    border-radius: 10px;
+    font-size: 13px;
+    background: #fff;
+  }
+}
+
+.taskForm, .sourceForm {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8faf8;
+  border-radius: 16px;
+  
+  input, select, textarea {
+    padding: 8px 12px;
+    border: 1px solid #e2efeb;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  
+  textarea {
+    grid-column: 1 / -1;
+  }
+  
+  button {
+    grid-column: 1 / -1;
+  }
+}
+
+.taskTable, .sourceTable, .fileTable {
+  width: 100%;
+  border-collapse: collapse;
+  
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2efeb;
+  }
+  
+  th {
+    font-weight: 600;
+    color: #17323b;
+    background: #f8faf8;
+  }
+  
+  td {
+    color: #5f747c;
+  }
+  
+  tr:hover td {
+    background: #f8faf8;
+  }
+}
+
+.fileSection {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e2efeb;
+  
+  h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #17323b;
+  }
+}
+
+.uploadForm {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  
+  input[type="file"] {
+    flex: 2;
+    padding: 8px;
+  }
+  
+  input[type="text"] {
+    flex: 2;
+    padding: 8px 12px;
+    border: 1px solid #e2efeb;
+    border-radius: 10px;
+  }
+}
+
+.badgePending {
+  display: inline-block;
+  background: #f0e8a0;
+  color: #8a7500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.accessDenied {
+  text-align: center;
+  padding: 40px;
+  color: #b45a5a;
+  background: #fef2f0;
+  border-radius: 16px;
+}
+
+// Таблица отчетов
+.reportTable {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2efeb;
+  }
+
+  th {
+    font-weight: 600;
+    color: #17323b;
+    background-color: #f8faf8;
+  }
+
+  tr:hover td {
+    background-color: #f8faf8;
+  }
+}
+
+.reportStatus {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusPending {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.statusSubmitted {
+  background-color: #e3f2fd;
+  color: #2196f3;
+}
+
+.statusReviewed {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.statusRejected {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.overdueDate {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 48px 20px;
+  color: #8aa4ac;
+
+  p {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .topActions {
+    justify-content: flex-start;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabs {
+    flex-wrap: wrap;
+  }
+  
+  .taskTable, .sourceTable, .fileTable, .reportTable {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .topActions {
+    flex-direction: column;
+  }
+  
+  .actionBtn {
+    width: 100%;
+    text-align: center;
+  }
 }

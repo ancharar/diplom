@@ -21,7 +21,7 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = (
             'id', 'title', 'description', 'technical_spec', 'project',
-            'assignee', 'created_by',
+            'assignee', 'created_by', 'priority',
             'status', 'status_display', 'deadline', 'allowed_transitions',
             'created_at', 'updated_at',
         )
@@ -39,18 +39,33 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ('title', 'description', 'technical_spec', 'assignee', 
-                  'deadline')
+                  'priority', 'deadline')
         extra_kwargs = {
             'title': {'required': True},
+            'priority': {'required': False, 'default': 'medium'},
         }
 
 
 class TaskUpdateSerializer(serializers.ModelSerializer):
-    """Сериализатор для обновления задачи (без статуса — статус через transition)."""
+    """Сериализатор для обновления задачи."""
+    
+    assignee_id = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Task
-        fields = ('title', 'description', 'technical_spec', 'assignee', 'deadline')
+        fields = ('title', 'description', 'technical_spec', 'priority', 
+                  'deadline', 'assignee_id')
+
+    def update(self, instance, validated_data):
+        assignee_id = validated_data.pop('assignee_id', None)
+        if assignee_id is not None:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                instance.assignee = User.objects.get(id=assignee_id)
+            except User.DoesNotExist:
+                pass
+        return super().update(instance, validated_data)
 
 
 class TaskTransitionSerializer(serializers.Serializer):

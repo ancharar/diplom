@@ -157,13 +157,41 @@ class ProjectDetailView(APIView):
 
 
 class ProjectMemberView(APIView):
-    """Добавление / удаление участников проекта."""
+    """Просмотр / добавление участников проекта."""
 
     permission_classes = (IsAuthenticated,)
 
     def get_project(self, pk: int) -> Project:
         """Получение проекта по id."""
         return Project.objects.select_related('owner').get(pk=pk)
+
+    def get(self, request: Request, pk: int) -> Response:
+        """Получить список участников проекта (только для участников)."""
+        try:
+            project = self.get_project(pk)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Проверяем, что пользователь является участником проекта
+        if not ProjectMembership.objects.filter(user=request.user, project=project).exists():
+            return Response(
+                {'detail': 'Вы не являетесь участником проекта.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Получаем всех участников проекта
+        memberships = ProjectMembership.objects.filter(project=project).select_related('user')
+        
+        members_data = [
+            {
+                'id': membership.user.id,
+                'full_name': membership.user.full_name,
+                'email': membership.user.email,
+            }
+            for membership in memberships
+        ]
+        
+        return Response(members_data)
 
     def post(self, request: Request, pk: int) -> Response:
         """Добавление участника в проект (только владелец)."""
@@ -356,3 +384,41 @@ class MyJoinRequestCancelView(APIView):
             )
         cancel_join_request(join_req, request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# 👇 ДОБАВЬТЕ ЭТОТ КЛАСС В КОНЕЦ ФАЙЛА
+class ProjectMyTasksView(APIView):
+    """Мои задачи в проекте (где я исполнитель)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, project_id: int) -> Response:
+        from tasks.models import Task
+        from tasks.serializers import TaskSerializer
+
+        try:
+            project = Project.objects.get(id=project_id)
+        except Project.DoesNotExist:
+            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Проверяем, что пользователь участник проекта
+        if not ProjectMembership.objects.filter(user=request.user, project=project).exists():
+            return Response(
+                {'detail': 'Вы не являетесь участником проекта.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Получаем задачи, где пользователь исполнитель
+        tasks = Task.objects.filter(project=project, assignee=request.user)
+
+        # Применяем фильтры
+        status_filter = request.query_params.get('status')
+        priority_filter = request.query_params.get('priority')
+
+        if status_filter:
+            tasks = tasks.filter(status=status_filter)
+        if priority_filter:
+            tasks = tasks.filter(priority=priority_filter)
+
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)

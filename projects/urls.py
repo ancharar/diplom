@@ -11,6 +11,7 @@ from .views import (
     ProjectListCreateView,
     ProjectMemberDeleteView,
     ProjectMemberView,
+    ProjectMyTasksView,  # 👈 ДОБАВЛЕН ИМПОРТ
 )
 
 app_name = 'projects'
@@ -22,6 +23,7 @@ urlpatterns = [
     path('<int:pk>/members/', ProjectMemberView.as_view(), name='members'),
     path('<int:pk>/members/<int:user_id>/', ProjectMemberDeleteView.as_view(), name='member-delete'),
     path('<int:pk>/history/', ProjectHistoryView.as_view(), name='history'),
+    path('<int:project_id>/my-tasks/', ProjectMyTasksView.as_view(), name='my-tasks'),  # 👈 ДОБАВЛЕН МАРШРУТ
     path(
         '<int:pk>/join-requests/',
         ProjectJoinRequestListCreateView.as_view(),

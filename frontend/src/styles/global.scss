@@ -1,75 +1,187 @@
-// Breakpoints по документу: ноутбуки и ПК
 $breakpoint-laptop: 1024px;
 $breakpoint-desktop: 1440px;
 
-// Базовый размер — уважает настройки браузера (UI_NF5)
 html {
   font-size: 100%;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #f5f6fa;
-  color: #2d3436;
+  background:
+    radial-gradient(
+      circle at 50% -18%,
+      rgba(255, 245, 238, 0.95) 0%,
+      rgba(235, 246, 255, 0.9) 22%,
+      rgba(238, 250, 246, 0.72) 42%,
+      transparent 58%
+    ),
+    linear-gradient(135deg, #f3f8ff 0%, #edf9f7 56%, #ffffff 100%);
+  color: #1d2f38;
   line-height: 1.6;
+  min-height: 100vh;
 }
 
-a { color: #2e75b6; text-decoration: none; &:hover { text-decoration: underline; } }
+a {
+  color: #1f8b75;
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
 
 .container {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 2rem;
 
   @media (max-width: $breakpoint-laptop) {
-    padding: 1rem;
+    padding: 1.25rem;
   }
 }
 
-.page-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.25rem; }
+.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1d2f38;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.5px;
+}
 
 .btn {
-  display: inline-block;
-  padding: 0.5rem 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s;
-  &:hover { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  transition: 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
 }
-.btn-primary { background: #2e75b6; color: #fff; }
-.btn-danger  { background: #d63031; color: #fff; }
-.btn-secondary { background: #636e72; color: #fff; }
+
+.btn-sm {
+  min-height: 34px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.btn-primary {
+  background: #1f8b75;
+  color: #fff;
+
+  &:hover {
+    background: #176f5d;
+  }
+}
+
+.btn-danger {
+  background: #d85b5b;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #6d7d83;
+  color: #fff;
+}
 
 .form-group {
-  margin-bottom: 0.875rem;
-  label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
-  input, textarea, select {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #dfe6e9;
-    border-radius: 6px;
+  margin-bottom: 1rem;
+
+  label {
+    display: block;
     font-size: 0.9rem;
-    &:focus { outline: none; border-color: #2e75b6; }
+    font-weight: 600;
+    color: #4f6269;
+    margin-bottom: 6px;
   }
-  textarea { resize: vertical; min-height: 5rem; }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 0.95rem;
+    color: #1d2f38;
+    transition: 0.2s ease;
+
+    &:hover {
+      border-color: #d1e4df;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #1f8b75;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 8rem;
+  }
 }
 
-.error-msg { color: #d63031; font-size: 0.85rem; margin-top: 0.5rem; }
+.error-msg {
+  color: #d85b5b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 16px 40px rgba(41, 91, 123, 0.07);
+  border: 1px solid rgba(31, 139, 117, 0.08);
+  margin-bottom: 1rem;
+}
 
 table {
   width: 100%;
   border-collapse: collapse;
-  th, td { padding: 0.625rem 0.75rem; text-align: left; border-bottom: 1px solid #dfe6e9; }
-  th { background: #f0f3f7; font-weight: 600; font-size: 0.85rem; }
-  tr:hover { background: #f8f9fb; }
+  background: rgba(255, 255, 255, 0.92);
+
+  th,
+  td {
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid #e2efeb;
+  }
+
+  th {
+    background: #edf9f7;
+    color: #1d2f38;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  tr:hover {
+    background: #f4fbf8;
+  }
 }
 
-// Таблица с горизонтальной прокруткой на ноутбуке
 .table-responsive {
   @media (max-width: $breakpoint-laptop) {
     overflow-x: auto;
@@ -77,30 +189,20 @@ table {
   }
 }
 
-.card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  margin-bottom: 1rem;
-}
-
-// Сетка карточек проектов — адаптивная
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
 
   @media (max-width: $breakpoint-laptop) {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
 
-// Форма: однаколоночная на ноутбуке
 .form-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
 
   @media (max-width: $breakpoint-laptop) {
     grid-template-columns: 1fr;

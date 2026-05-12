@@ -1,0 +1,503 @@
+// Reports.module.scss
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #17323b;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #5f747c;
+  margin: 4px 0 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+// Сводка по отчетам
+.summaryGrid {
+  margin-bottom: 24px;
+}
+
+.summaryCard {
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.summaryValue {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.summaryLabel {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+// Шаблоны отчетов
+.templatesList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.templateCard {
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.templateHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.templateTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #17323b;
+  margin: 0 0 4px;
+}
+
+.templateDescription {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.templateMeta {
+  display: flex;
+  gap: 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.templateActions {
+  display: flex;
+  gap: 8px;
+}
+
+// Таблица отчетов
+.reportTable {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  th {
+    font-weight: 600;
+    color: #17323b;
+    background-color: #f8f9fa;
+  }
+
+  tr:hover td {
+    background-color: #f8f9fa;
+  }
+}
+
+// Статусы отчетов
+.reportStatus {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusPending {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.statusSubmitted {
+  background-color: #e3f2fd;
+  color: #2196f3;
+}
+
+.statusReviewed {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.statusRejected {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.overdueRow {
+  background-color: #fff8e1;
+}
+
+.overdueDate {
+  color: #f44336;
+  font-weight: 500;
+}
+
+// Статистика
+.statsPaper {
+  padding: 24px;
+  border-radius: 16px;
+}
+
+.statsProgress {
+  margin: 16px 0;
+}
+
+.progressBar {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #1a6b58, #238f76);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+// Карточка отчета (ReportCard)
+.reportCard {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 16px;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.reportCardOverdue {
+  border-left: 4px solid #f44336;
+}
+
+.reportCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.reportCardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #17323b;
+}
+
+.reportCardPeriod {
+  font-size: 13px;
+  color: #6c757d;
+  margin-bottom: 12px;
+}
+
+.reportCardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.reportCardInfo {
+  display: flex;
+  gap: 16px;
+}
+
+.reportCardInfoItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.reportCardComment {
+  margin-top: 12px;
+  padding: 8px;
+  background-color: #ffebee;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #f44336;
+}
+
+// Форма отчета (ReportForm)
+.reportForm {
+  padding: 24px;
+}
+
+.reportFormHeader {
+  margin-bottom: 24px;
+}
+
+.reportFormTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #17323b;
+  margin-bottom: 8px;
+}
+
+.reportFormMeta {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.reportFormQuestion {
+  margin-bottom: 24px;
+}
+
+.reportFormQuestionLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #17323b;
+  margin-bottom: 8px;
+}
+
+.reportFormRequired {
+  color: #f44336;
+  margin-left: 4px;
+}
+
+.reportFormActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e9ecef;
+}
+
+// Пустое состояние
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.emptyStateIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.emptyStateText {
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+// Диалог создания шаблона
+.dialogContent {
+  padding: 8px 0;
+}
+
+.dialogField {
+  margin-bottom: 16px;
+}
+
+.dialogFieldLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #17323b;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.dialogFieldRequired {
+  color: #f44336;
+}
+
+.dialogInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #238f76;
+  }
+}
+
+.dialogTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+
+  &:focus {
+    outline: none;
+    border-color: #238f76;
+  }
+}
+
+.dialogSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #238f76;
+  }
+}
+
+.questionsList {
+  margin-top: 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.questionItem {
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.questionText {
+  font-size: 14px;
+  color: #17323b;
+}
+
+.addQuestionBtn {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px dashed #238f76;
+  border-radius: 8px;
+  background: none;
+  color: #238f76;
+  cursor: pointer;
+  width: 100%;
+  font-size: 13px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(35, 143, 118, 0.05);
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .headerActions button {
+    width: 100%;
+  }
+
+  .templateHeader {
+    flex-direction: column;
+  }
+
+  .templateMeta {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reportTable {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .reportCardFooter {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+}

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'tasks.apps.TasksConfig',
     'vk_integration.apps.VkIntegrationConfig',
     'literature.apps.LiteratureConfig',
+    'reports.apps.ReportsConfig',  # 👈 ИСПРАВЛЕНО (один раз)
 ]
 
 MIDDLEWARE = [

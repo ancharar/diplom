@@ -398,3 +398,38 @@ class TaskAssigneeView(APIView):
         )
 
         return Response(TaskSerializer(task).data)
+
+
+class TaskProjectMembersView(APIView):
+    """Получение участников проекта, к которому привязана задача."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, task_id: int) -> Response:
+        """Получить участников проекта задачи."""
+        try:
+            task = Task.objects.select_related('project').get(pk=task_id)
+        except Task.DoesNotExist:
+            return Response({'detail': 'Задача не найдена.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Проверяем, что пользователь участник проекта
+        if not ProjectMembership.objects.filter(user=request.user, project=task.project).exists():
+            return Response(
+                {'detail': 'Вы не являетесь участником проекта.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Получаем участников проекта
+        memberships = ProjectMembership.objects.filter(project=task.project).select_related('user')
+        
+        # Формируем ответ
+        members_data = [
+            {
+                'id': membership.user.id,
+                'full_name': membership.user.full_name,
+                'email': membership.user.email,
+            }
+            for membership in memberships
+        ]
+        
+        return Response(members_data)
