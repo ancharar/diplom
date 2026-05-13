@@ -270,14 +270,11 @@ class Command(BaseCommand):
         self.stdout.write('Очистка существующих данных...')
 
         from tasks.models import TaskAttachment
-        from vk_integration.models import VKPublication, VKToken
 
         # Удаляем в порядке зависимостей
         TaskAttachment.objects.all().delete()
         TaskHistory.objects.all().delete()
         Task.objects.all().delete()
-        VKPublication.objects.all().delete()
-        VKToken.objects.all().delete()
         ProjectHistory.objects.all().delete()
         JoinRequest.objects.all().delete()
         ProjectMembership.objects.all().delete()

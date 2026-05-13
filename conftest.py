@@ -6,7 +6,6 @@ from rest_framework.test import APIClient
 
 from projects.models import Project, ProjectMembership
 from tasks.models import Task
-from vk_integration.models import VKToken
 
 User = get_user_model()
 
@@ -68,10 +67,3 @@ def outsider_client(outsider):
     return client
 
 
-@pytest.fixture
-def auth_client_with_vk_token(user, auth_client):
-    """APIClient с VK-токеном."""
-    VKToken.objects.create(
-        user=user, access_token='test_vk_token_123', vk_user_id=12345,
-    )
-    return auth_client

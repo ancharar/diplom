@@ -92,6 +92,17 @@ export interface LiteratureSource {
   updated_at: string;
 }
 
+export interface ArxivResult {
+  arxiv_id: string;
+  title: string;
+  authors: string;
+  year: number | null;
+  summary: string;
+  url: string;
+  pdf_url: string;
+  categories: string[];
+}
+
 export interface ProjectFile {
   id: string;
   project_id: number;
@@ -127,20 +138,6 @@ export interface JoinRequest {
   status: 'pending' | 'approved' | 'rejected';
   reviewed_by: User | null;
   reviewed_at: string | null;
-  created_at: string;
-}
-
-export interface VKPublication {
-  id: number;
-  project: number;
-  author: User;
-  title: string;
-  content: string;
-  vk_post_id: number | null;
-  owner_id: number;
-  status: 'draft' | 'published' | 'failed';
-  published_at: string | null;
-  error_message: string;
   created_at: string;
 }
 

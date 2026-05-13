@@ -20,7 +20,6 @@ urlpatterns = [
     path('api/v1/projects/', include('projects.urls')),
     path('api/v1/projects/<int:project_id>/tasks/', ProjectTaskListCreateView.as_view(), name='project-tasks'),
     path('api/v1/tasks/', include('tasks.urls')),
-    path('api/v1/vk/', include('vk_integration.urls')),
     path('api/v1/projects/<int:project_id>/literature/', include('literature.urls')),
     path('api/v1/reports/', include('reports.urls')),  # 👈 ДОБАВЛЕНО
 

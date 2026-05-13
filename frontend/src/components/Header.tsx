@@ -52,13 +52,6 @@ export default function Header({ user }: HeaderProps) {
       };
     }
 
-    if (location.pathname.startsWith('/vk')) {
-      return {
-        title: 'Публикации',
-        description: 'Управление публикациями и научными материалами',
-      };
-    }
-
     if (location.pathname.startsWith('/profile')) {
       return {
         title: 'Моя анкета',
