@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'projects.apps.ProjectsConfig',
     'tasks.apps.TasksConfig',
-    'vk_integration.apps.VkIntegrationConfig',
     'literature.apps.LiteratureConfig',
     'reports.apps.ReportsConfig',  # 👈 ИСПРАВЛЕНО (один раз)
 ]
@@ -131,16 +130,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Кастомная модель пользователя
 AUTH_USER_MODEL = 'users.User'
 
-
-# ─── VK OAuth ────────────────────────────────────────────────────────────────
-
-VK_APP_ID = os.getenv('VK_APP_ID')
-VK_APP_SECRET = os.getenv('VK_APP_SECRET')
-VK_REDIRECT_URI = os.getenv(
-    'VK_REDIRECT_URI',
-    'http://localhost:8000/api/v1/vk/callback/',
-)
-VK_API_VERSION = os.getenv('VK_API_VERSION', '5.131')
 
 FRONTEND_URL = os.getenv(
     'FRONTEND_URL', 'http://localhost:5173',

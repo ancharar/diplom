@@ -7,7 +7,7 @@ import StatusBadge from '../components/StatusBadge';
 import JoinRequestModal from '../components/JoinRequestModal';
 import { useToast } from '../contexts/ToastContext';
 import { getErrorMessage } from '../utils/errorMessages';
-import type { Project, ProjectCatalog, Task, User, LiteratureSource, ProjectFile } from '../types';
+import type { Project, ProjectCatalog, Task, User, LiteratureSource, ProjectFile, ArxivResult } from '../types';
 import styles from '../styles/ProjectDetail.module.scss';
 
 interface ProjectDetailPageProps {
@@ -70,6 +70,13 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [fileDesc, setFileDesc] = useState('');
   const [fileError, setFileError] = useState('');
+
+  // arXiv поиск
+  const [arxivQuery, setArxivQuery] = useState('');
+  const [arxivResults, setArxivResults] = useState<ArxivResult[]>([]);
+  const [arxivLoading, setArxivLoading] = useState(false);
+  const [arxivError, setArxivError] = useState('');
+  const [arxivSaving, setArxivSaving] = useState<Set<string>>(new Set());
 
   const [showJoinModal, setShowJoinModal] = useState(false);
 
@@ -263,6 +270,56 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       await client.delete(`/projects/${id}/literature/files/${fileId}/`);
       fetchFiles();
     } catch { /* ignore */ }
+  };
+
+  const handleArxivSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const q = arxivQuery.trim();
+    if (!q) return;
+    setArxivLoading(true);
+    setArxivError('');
+    setArxivResults([]);
+    try {
+      const { data } = await client.get<{ results: ArxivResult[] }>(
+        `/projects/${id}/literature/arxiv-search/`,
+        { params: { q, max_results: 10 } },
+      );
+      setArxivResults(data.results);
+      if (data.results.length === 0) {
+        setArxivError('По вашему запросу ничего не найдено');
+      }
+    } catch {
+      setArxivError('Ошибка при поиске на arXiv');
+    } finally {
+      setArxivLoading(false);
+    }
+  };
+
+  const handleSaveArxivResult = async (result: ArxivResult) => {
+    setArxivSaving((prev) => new Set(prev).add(result.arxiv_id));
+    try {
+      const payload = {
+        title: result.title,
+        authors: result.authors,
+        year: result.year,
+        url: result.url,
+        description: result.summary.length > 500
+          ? result.summary.substring(0, 497) + '...'
+          : result.summary,
+        tags: result.categories,
+      };
+      await client.post(`/projects/${id}/literature/sources/`, payload);
+      showSuccess('Статья сохранена в источники');
+      fetchSources();
+    } catch {
+      showError('Ошибка сохранения статьи');
+    } finally {
+      setArxivSaving((prev) => {
+        const s = new Set(prev);
+        s.delete(result.arxiv_id);
+        return s;
+      });
+    }
   };
 
   if (loading) return <Loader />;
@@ -595,6 +652,104 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
               </tbody>
             </table>
           )}
+
+          {/* Поиск на arXiv */}
+          <div className={styles.fileSection}>
+            <h3>Поиск статей на arXiv</h3>
+            <form onSubmit={handleArxivSearch} className={styles.uploadForm}>
+              <input
+                type="text"
+                placeholder="Ключевые слова (например, machine learning)"
+                value={arxivQuery}
+                onChange={(e) => setArxivQuery(e.target.value)}
+                style={{ flex: 3 }}
+              />
+              <button type="submit" className="btn btn-primary" disabled={arxivLoading || !arxivQuery.trim()}>
+                {arxivLoading ? 'Поиск...' : 'Найти на arXiv'}
+              </button>
+              {projectFull?.area && !arxivQuery && (
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setArxivQuery(projectFull.area)}
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  Область проекта
+                </button>
+              )}
+            </form>
+
+            {arxivError && <p className="error-msg">{arxivError}</p>}
+
+            {arxivResults.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+                {arxivResults.map((r) => (
+                  <div
+                    key={r.arxiv_id}
+                    style={{
+                      background: '#f8faf8',
+                      borderRadius: 16,
+                      padding: 16,
+                      border: '1px solid #e2efeb',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <a href={r.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600, fontSize: 15, color: '#17323b' }}>
+                          {r.title}
+                        </a>
+                        <div style={{ fontSize: 13, color: '#5f747c', marginTop: 4 }}>
+                          {r.authors} {r.year && `(${r.year})`}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#8aa4ac', marginTop: 8, lineHeight: 1.5 }}>
+                          {r.summary.length > 300 ? r.summary.substring(0, 297) + '...' : r.summary}
+                        </div>
+                        {r.categories.length > 0 && (
+                          <div style={{ marginTop: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {r.categories.map((cat) => (
+                              <span
+                                key={cat}
+                                style={{
+                                  background: 'rgba(31, 139, 117, 0.1)',
+                                  color: '#1f8b75',
+                                  padding: '2px 8px',
+                                  borderRadius: 12,
+                                  fontSize: 11,
+                                }}
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleSaveArxivResult(r)}
+                          disabled={arxivSaving.has(r.arxiv_id)}
+                          style={{ fontSize: 13, padding: '6px 14px' }}
+                        >
+                          {arxivSaving.has(r.arxiv_id) ? 'Сохранение...' : 'Сохранить'}
+                        </button>
+                        {r.pdf_url && (
+                          <a
+                            href={r.pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-outline"
+                            style={{ fontSize: 13, padding: '6px 14px', textAlign: 'center', textDecoration: 'none' }}
+                          >
+                            PDF
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className={styles.fileSection}>
             <h3>Файлы и документы</h3>

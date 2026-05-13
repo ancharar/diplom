@@ -17,7 +17,7 @@ class ReportTemplateSerializer(serializers.ModelSerializer):
             'id', 'project', 'title', 'description', 'frequency',
             'deadline_days', 'questions', 'is_active', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'project', 'created_at', 'updated_at']
 
 
 class ReportTaskSerializer(serializers.ModelSerializer):

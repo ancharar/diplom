@@ -10,6 +10,7 @@ urlpatterns = [
     path('sources/<str:source_id>/', views.SourceDetailView.as_view(), name='source-detail'),
     # Поиск
     path('search/', views.SearchLibraryView.as_view(), name='search'),
+    path('arxiv-search/', views.ArxivSearchView.as_view(), name='arxiv-search'),
     # Файлы
     path('files/', views.FileListUploadView.as_view(), name='file-list'),
     path('files/<str:file_id>/download/', views.FileDownloadView.as_view(), name='file-download'),

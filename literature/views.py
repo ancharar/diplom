@@ -195,3 +195,58 @@ class SearchLibraryView(APIView):
 
         results = services.search_sources(project_id, query)
         return Response(results)
+
+
+class ArxivSearchView(APIView):
+    """Поиск статей на arXiv по ключевым словам."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, project_id: int) -> Response:
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND,
+            )
+        perm = IsProjectMember()
+        if not perm.has_object_permission(request, self, project):
+            return Response(
+                {'detail': perm.message}, status=status.HTTP_403_FORBIDDEN,
+            )
+
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response(
+                {'error': 'Запрос не может быть пустым'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(query) > 300:
+            return Response(
+                {'error': 'Запрос слишком длинный'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            max_results = min(int(request.query_params.get('max_results', 10)), 50)
+        except (ValueError, TypeError):
+            max_results = 10
+        try:
+            start = max(int(request.query_params.get('start', 0)), 0)
+        except (ValueError, TypeError):
+            start = 0
+
+        try:
+            results = services.search_arxiv(query, start=start, max_results=max_results)
+        except Exception:
+            return Response(
+                {'error': 'Ошибка при обращении к arXiv. Попробуйте позже.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response({
+            'results': results,
+            'query': query,
+            'start': start,
+            'max_results': max_results,
+        })

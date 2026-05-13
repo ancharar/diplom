@@ -1,8 +1,10 @@
 """Сервисный слой для работы с литературными источниками и файлами в MongoDB."""
 
 import base64
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
+import requests as http_requests
 from bson import ObjectId
 from django.core.exceptions import ValidationError
 
@@ -94,6 +96,73 @@ def search_sources(project_id: int, query: str) -> list[dict]:
         ).sort([('score', {'$meta': 'textScore'})])
     )
     return [_serialize_source(d) for d in docs]
+
+
+# ── Поиск на arXiv ───────────────────────────────────────────────────────────
+
+ARXIV_API_URL = 'http://export.arxiv.org/api/query'
+ATOM_NS = '{http://www.w3.org/2005/Atom}'
+ARXIV_NS = '{http://arxiv.org/schemas/atom}'
+
+
+def search_arxiv(query: str, start: int = 0, max_results: int = 10) -> list[dict]:
+    """Поиск статей на arXiv по ключевым словам."""
+    params = {
+        'search_query': f'all:{query}',
+        'start': start,
+        'max_results': max_results,
+        'sortBy': 'relevance',
+        'sortOrder': 'descending',
+    }
+    resp = http_requests.get(ARXIV_API_URL, params=params, timeout=15)
+    resp.raise_for_status()
+
+    root = ET.fromstring(resp.text)
+    results = []
+
+    for entry in root.findall(f'{ATOM_NS}entry'):
+        arxiv_id_url = entry.findtext(f'{ATOM_NS}id', '')
+        arxiv_id = arxiv_id_url.split('/abs/')[-1] if '/abs/' in arxiv_id_url else arxiv_id_url
+
+        authors = [
+            a.findtext(f'{ATOM_NS}name', '')
+            for a in entry.findall(f'{ATOM_NS}author')
+        ]
+
+        published = entry.findtext(f'{ATOM_NS}published', '')
+        year = int(published[:4]) if len(published) >= 4 else None
+
+        pdf_url = ''
+        for link in entry.findall(f'{ATOM_NS}link'):
+            if link.get('title') == 'pdf':
+                pdf_url = link.get('href', '')
+                break
+
+        categories = [
+            cat.get('term', '')
+            for cat in entry.findall(f'{ARXIV_NS}primary_category')
+        ]
+        if not categories:
+            categories = [
+                cat.get('term', '')
+                for cat in entry.findall(f'{ATOM_NS}category')
+            ][:3]
+
+        title_text = entry.findtext(f'{ATOM_NS}title', '').strip().replace('\n', ' ')
+        summary_text = entry.findtext(f'{ATOM_NS}summary', '').strip().replace('\n', ' ')
+
+        results.append({
+            'arxiv_id': arxiv_id,
+            'title': title_text,
+            'authors': ', '.join(authors),
+            'year': year,
+            'summary': summary_text,
+            'url': arxiv_id_url,
+            'pdf_url': pdf_url,
+            'categories': categories,
+        })
+
+    return results
 
 
 # ── Файлы ────────────────────────────────────────────────────────────────────
