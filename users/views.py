@@ -2,13 +2,18 @@
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
+from .serializers import (
+    AdminUserSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 User = get_user_model()
 
@@ -67,6 +72,12 @@ class LoginView(APIView):
         if not user.is_active:
             return Response(
                 {'detail': 'Аккаунт деактивирован.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if user.is_blocked:
+            return Response(
+                {'detail': 'Аккаунт заблокирован. Обратитесь к администратору.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -129,3 +140,68 @@ class LogoutView(APIView):
                 {'error': 'Неверный токен'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class AdminUserListView(APIView):
+    """Список всех пользователей (только для администратора)."""
+
+    permission_classes = (IsAdminUser,)
+
+    def get(self, request: Request) -> Response:
+        users = User.objects.all().order_by('-created_at')
+        serializer = AdminUserSerializer(users, many=True)
+        return Response(serializer.data)
+
+
+class AdminUserDetailView(APIView):
+    """Управление пользователем (блокировка, права, удаление)."""
+
+    permission_classes = (IsAdminUser,)
+
+    def get(self, request: Request, user_id: int) -> Response:
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Пользователь не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(AdminUserSerializer(user).data)
+
+    def patch(self, request: Request, user_id: int) -> Response:
+        """Обновить пользователя (block/unblock, назначить админом)."""
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Пользователь не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if 'is_blocked' in request.data:
+            user.is_blocked = request.data['is_blocked']
+        if 'is_staff' in request.data:
+            user.is_staff = request.data['is_staff']
+        if 'is_superuser' in request.data:
+            user.is_superuser = request.data['is_superuser']
+
+        user.save()
+        return Response(AdminUserSerializer(user).data)
+
+    def delete(self, request: Request, user_id: int) -> Response:
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': 'Пользователь не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if user.id == request.user.id:
+            return Response(
+                {'detail': 'Нельзя удалить самого себя.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Paper, 
-  Button, 
+import { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Typography,
+  Tabs,
+  Tab,
+  Paper,
+  Button,
   Chip,
   Table,
   TableBody,
@@ -32,15 +32,16 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon,
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
   Warning as WarningIcon,
+  Download as DownloadIcon,
+  Upload as UploadIcon,
 } from '@mui/icons-material';
 import { reportApi } from '../api/reportsApi';
 import { useToast } from '../contexts/ToastContext';
-import type { Report, ReportTemplate, ReportSummary, ReportQuestion } from '../types';
+import type { Report, ReportTemplate, ReportSummary } from '../types';
 import styles from '../styles/Reports.module.scss';
 
 interface TabPanelProps {
@@ -58,20 +59,17 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-// Тип для формы шаблона
 interface TemplateFormData {
   title: string;
   description: string;
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'manual';
   deadline_days: number;
-  questions: ReportQuestion[];
 }
 
 export default function ReportsPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
-  
+
   const [tabValue, setTabValue] = useState(0);
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
@@ -84,8 +82,13 @@ export default function ReportsPage() {
     description: '',
     frequency: 'weekly',
     deadline_days: 3,
-    questions: [{ id: 'q1', label: '', type: 'textarea', required: true }],
   });
+  const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const templateFileRef = useRef<HTMLInputElement>(null);
+
+  // Для загрузки файлов отчетов
+  const [uploadingReportId, setUploadingReportId] = useState<number | null>(null);
+  const reportFileRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     if (!projectId) return;
@@ -99,8 +102,8 @@ export default function ReportsPage() {
       setTemplates(templatesRes.data);
       setReports(reportsRes.data);
       setSummary(summaryRes.data);
-    } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
+    } catch {
+      // ignore
     } finally {
       setLoading(false);
     }
@@ -116,8 +119,7 @@ export default function ReportsPage() {
       const response = await reportApi.generateReports(Number(projectId));
       showSuccess(response.data.message);
       loadData();
-    } catch (err) {
-      console.error('Ошибка создания отчетов:', err);
+    } catch {
       showError('Ошибка создания отчетов');
     }
   };
@@ -125,40 +127,37 @@ export default function ReportsPage() {
   const handleSaveTemplate = async () => {
     if (!projectId) return;
     try {
-      // Преобразуем данные для отправки на сервер
-      const templateData: Partial<ReportTemplate> = {
-        title: templateForm.title,
-        description: templateForm.description,
-        frequency: templateForm.frequency,
-        deadline_days: templateForm.deadline_days,
-        questions: templateForm.questions.map(q => ({
-          id: q.id,
-          label: q.label,
-          type: q.type,
-          required: q.required || false,
-          options: q.options,
-        })),
-      };
+      const formData = new FormData();
+      formData.append('title', templateForm.title);
+      formData.append('description', templateForm.description);
+      formData.append('frequency', templateForm.frequency);
+      formData.append('deadline_days', String(templateForm.deadline_days));
+      if (templateFile) {
+        formData.append('template_file', templateFile);
+      }
 
       if (editingTemplate) {
-        await reportApi.updateTemplate(Number(projectId), editingTemplate.id, templateData);
+        await reportApi.updateTemplate(
+          Number(projectId),
+          editingTemplate.id,
+          formData,
+        );
         showSuccess('Шаблон обновлен');
       } else {
-        await reportApi.createTemplate(Number(projectId), templateData);
+        await reportApi.createTemplate(Number(projectId), formData);
         showSuccess('Шаблон создан');
       }
       setOpenTemplateDialog(false);
       setEditingTemplate(null);
+      setTemplateFile(null);
       setTemplateForm({
         title: '',
         description: '',
         frequency: 'weekly',
         deadline_days: 3,
-        questions: [{ id: 'q1', label: '', type: 'textarea', required: true }],
       });
       loadData();
-    } catch (err) {
-      console.error('Ошибка сохранения шаблона:', err);
+    } catch {
       showError('Ошибка сохранения шаблона');
     }
   };
@@ -170,9 +169,86 @@ export default function ReportsPage() {
       await reportApi.deleteTemplate(Number(projectId), templateId);
       showSuccess('Шаблон удален');
       loadData();
-    } catch (err) {
-      console.error('Ошибка удаления шаблона:', err);
+    } catch {
       showError('Ошибка удаления шаблона');
+    }
+  };
+
+  const handleDownloadTemplate = async (templateId: number, title: string) => {
+    if (!projectId) return;
+    try {
+      const response = await reportApi.downloadTemplate(
+        Number(projectId),
+        templateId,
+      );
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${title}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      showError('Ошибка скачивания шаблона');
+    }
+  };
+
+  const handleUploadReport = (reportId: number) => {
+    setUploadingReportId(reportId);
+    reportFileRef.current?.click();
+  };
+
+  const handleReportFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingReportId) return;
+
+    if (!file.name.endsWith('.docx')) {
+      showError('Допускаются только файлы .docx');
+      return;
+    }
+
+    try {
+      await reportApi.uploadReport(uploadingReportId, file);
+      showSuccess('Отчет загружен');
+      loadData();
+    } catch {
+      showError('Ошибка загрузки отчета');
+    } finally {
+      setUploadingReportId(null);
+      if (reportFileRef.current) reportFileRef.current.value = '';
+    }
+  };
+
+  const handleDownloadReport = async (reportId: number) => {
+    try {
+      const response = await reportApi.downloadReport(reportId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `report_${reportId}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      showError('Ошибка скачивания отчета');
+    }
+  };
+
+  const handleReviewReport = async (reportId: number, action: 'reviewed' | 'rejected') => {
+    const comment = action === 'rejected'
+      ? window.prompt('Укажите причину возврата:') || ''
+      : '';
+    try {
+      await reportApi.reviewReport(reportId, {
+        status: action,
+        review_comment: comment,
+      });
+      showSuccess(action === 'reviewed' ? 'Отчет принят' : 'Отчет отправлен на доработку');
+      loadData();
+    } catch {
+      showError('Ошибка проверки отчета');
     }
   };
 
@@ -211,6 +287,15 @@ export default function ReportsPage() {
 
   return (
     <div className={styles.container}>
+      {/* Hidden file input for report uploads */}
+      <input
+        type="file"
+        ref={reportFileRef}
+        style={{ display: 'none' }}
+        accept=".docx"
+        onChange={handleReportFileSelected}
+      />
+
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Отчеты</h1>
@@ -286,12 +371,25 @@ export default function ReportsPage() {
                     </Typography>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <Chip 
-                      label={template.frequency === 'weekly' ? 'Еженедельный' : template.frequency === 'monthly' ? 'Ежемесячный' : 'По требованию'} 
-                      size="small" 
+                    <Chip
+                      label={
+                        template.frequency === 'weekly' ? 'Еженедельный'
+                        : template.frequency === 'monthly' ? 'Ежемесячный'
+                        : 'По требованию'
+                      }
+                      size="small"
                     />
-                    <IconButton 
-                      size="small" 
+                    {template.has_template_file && (
+                      <IconButton
+                        size="small"
+                        title="Скачать шаблон .docx"
+                        onClick={() => handleDownloadTemplate(template.id, template.title)}
+                      >
+                        <DownloadIcon />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      size="small"
                       onClick={() => {
                         setEditingTemplate(template);
                         setTemplateForm({
@@ -299,7 +397,6 @@ export default function ReportsPage() {
                           description: template.description,
                           frequency: template.frequency,
                           deadline_days: template.deadline_days,
-                          questions: template.questions,
                         });
                         setOpenTemplateDialog(true);
                       }}
@@ -312,8 +409,8 @@ export default function ReportsPage() {
                   </div>
                 </div>
                 <div className={styles.templateMeta}>
-                  <span>📅 Дедлайн: {template.deadline_days} дня на заполнение</span>
-                  <span>📋 Вопросов: {template.questions.length}</span>
+                  <span>Дедлайн: {template.deadline_days} дня на заполнение</span>
+                  <span>{template.has_template_file ? 'Файл шаблона загружен' : 'Файл шаблона не загружен'}</span>
                 </div>
               </Paper>
             ))
@@ -330,7 +427,7 @@ export default function ReportsPage() {
                 <TableCell>Период</TableCell>
                 <TableCell>Статус</TableCell>
                 <TableCell>Дедлайн</TableCell>
-                <TableCell>Дата сдачи</TableCell>
+                <TableCell>Файл</TableCell>
                 <TableCell>Действия</TableCell>
               </TableRow>
             </TableHead>
@@ -342,9 +439,9 @@ export default function ReportsPage() {
                   <TableCell>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {getStatusIcon(report.status, report.is_overdue)}
-                      <Chip 
-                        label={report.status_display} 
-                        size="small" 
+                      <Chip
+                        label={report.status_display}
+                        size="small"
                         color={getStatusColor(report.status)}
                       />
                     </div>
@@ -352,11 +449,42 @@ export default function ReportsPage() {
                   <TableCell className={report.is_overdue ? styles.overdueDate : ''}>
                     {new Date(report.deadline).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>{report.submitted_at ? new Date(report.submitted_at).toLocaleDateString() : '—'}</TableCell>
                   <TableCell>
-                    <IconButton size="small" onClick={() => navigate(`/reports/${report.id}`)}>
-                      <ViewIcon />
-                    </IconButton>
+                    {report.has_submitted_file ? (
+                      <IconButton
+                        size="small"
+                        title="Скачать отчет"
+                        onClick={() => handleDownloadReport(report.id)}
+                      >
+                        <DownloadIcon />
+                      </IconButton>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {report.status === 'submitted' && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="success"
+                            onClick={() => handleReviewReport(report.id, 'reviewed')}
+                          >
+                            Принять
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            onClick={() => handleReviewReport(report.id, 'rejected')}
+                          >
+                            Вернуть
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -375,15 +503,17 @@ export default function ReportsPage() {
           <Typography variant="h6" gutterBottom>Общая статистика</Typography>
           <div className={styles.statsProgress}>
             <div className={styles.progressBar}>
-              <div 
-                className={styles.progressFill} 
+              <div
+                className={styles.progressFill}
                 style={{ width: `${summary?.completion_rate || 0}%` }}
               />
             </div>
             <Typography variant="body2">Выполнено: {summary?.completion_rate || 0}%</Typography>
           </div>
 
-          <Typography variant="h6" gutterBottom style={{ marginTop: 24 }}>Статистика по участникам</Typography>
+          <Typography variant="h6" gutterBottom style={{ marginTop: 24 }}>
+            Статистика по участникам
+          </Typography>
           <TableContainer>
             <Table size="small">
               <TableHead>
@@ -414,8 +544,15 @@ export default function ReportsPage() {
       </TabPanel>
 
       {/* Диалог создания/редактирования шаблона */}
-      <Dialog open={openTemplateDialog} onClose={() => setOpenTemplateDialog(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{editingTemplate ? 'Редактировать шаблон' : 'Создать шаблон'}</DialogTitle>
+      <Dialog
+        open={openTemplateDialog}
+        onClose={() => setOpenTemplateDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {editingTemplate ? 'Редактировать шаблон' : 'Создать шаблон'}
+        </DialogTitle>
         <DialogContent>
           <TextField
             label="Название шаблона"
@@ -433,12 +570,16 @@ export default function ReportsPage() {
             rows={2}
             value={templateForm.description}
             onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+            InputLabelProps={{ shrink: true }}
           />
           <FormControl fullWidth margin="normal">
             <InputLabel>Периодичность</InputLabel>
             <Select
               value={templateForm.frequency}
-              onChange={(e) => setTemplateForm({ ...templateForm, frequency: e.target.value as 'weekly' | 'monthly' | 'quarterly' | 'manual' })}
+              onChange={(e) => setTemplateForm({
+                ...templateForm,
+                frequency: e.target.value as TemplateFormData['frequency'],
+              })}
             >
               <MenuItem value="weekly">Еженедельно</MenuItem>
               <MenuItem value="monthly">Ежемесячно</MenuItem>
@@ -452,12 +593,39 @@ export default function ReportsPage() {
             fullWidth
             margin="normal"
             value={templateForm.deadline_days}
-            onChange={(e) => setTemplateForm({ ...templateForm, deadline_days: Number(e.target.value) })}
+            onChange={(e) => setTemplateForm({
+              ...templateForm,
+              deadline_days: Number(e.target.value),
+            })}
           />
+          <div style={{ marginTop: 16 }}>
+            <Typography variant="body2" style={{ marginBottom: 8 }}>
+              Файл шаблона (.docx)
+            </Typography>
+            <input
+              type="file"
+              accept=".docx"
+              ref={templateFileRef}
+              onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
+            />
+            {editingTemplate?.has_template_file && !templateFile && (
+              <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
+                Файл шаблона уже загружен
+              </Typography>
+            )}
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenTemplateDialog(false)}>Отмена</Button>
-          <Button onClick={handleSaveTemplate} variant="contained">Сохранить</Button>
+          <Button onClick={() => {
+            setOpenTemplateDialog(false);
+            setEditingTemplate(null);
+            setTemplateFile(null);
+          }}>
+            Отмена
+          </Button>
+          <Button onClick={handleSaveTemplate} variant="contained">
+            Сохранить
+          </Button>
         </DialogActions>
       </Dialog>
     </div>

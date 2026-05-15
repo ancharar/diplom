@@ -5,7 +5,14 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from projects.views import MyJoinRequestCancelView, MyJoinRequestsView
 
-from .views import LoginView, LogoutView, MeView, RegisterView
+from .views import (
+    AdminUserDetailView,
+    AdminUserListView,
+    LoginView,
+    LogoutView,
+    MeView,
+    RegisterView,
+)
 
 app_name = 'users'
 
@@ -24,5 +31,16 @@ urlpatterns = [
         'me/join-requests/<int:req_id>/',
         MyJoinRequestCancelView.as_view(),
         name='my-join-request-cancel',
+    ),
+    # Администрирование пользователей
+    path(
+        'admin/users/',
+        AdminUserListView.as_view(),
+        name='admin-user-list',
+    ),
+    path(
+        'admin/users/<int:user_id>/',
+        AdminUserDetailView.as_view(),
+        name='admin-user-detail',
     ),
 ]

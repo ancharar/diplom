@@ -43,6 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_active = models.BooleanField('Активен', default=True)
     is_staff = models.BooleanField('Доступ к админке', default=False)
+    is_blocked = models.BooleanField('Заблокирован', default=False)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
 

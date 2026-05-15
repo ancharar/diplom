@@ -5,11 +5,13 @@ from django.urls import path
 from .views import (
     ReportTemplateListCreateView,
     ReportTemplateDetailView,
+    ReportTemplateDownloadView,
     ReportListView,
     MyReportsView,
     GenerateReportsView,
     ReportDetailView,
-    ReportSubmitView,
+    ReportUploadView,
+    ReportDownloadView,
     ReportReviewView,
     ReportSummaryView,
     ReportCollectTasksView,
@@ -22,53 +24,65 @@ urlpatterns = [
     path(
         'projects/<int:project_id>/report-templates/',
         ReportTemplateListCreateView.as_view(),
-        name='report-templates'
+        name='report-templates',
     ),
     path(
-        'projects/<int:project_id>/report-templates/<int:template_id>/',
+        'projects/<int:project_id>/report-templates/'
+        '<int:template_id>/',
         ReportTemplateDetailView.as_view(),
-        name='report-template-detail'
+        name='report-template-detail',
     ),
-    
+    path(
+        'projects/<int:project_id>/report-templates/'
+        '<int:template_id>/download/',
+        ReportTemplateDownloadView.as_view(),
+        name='report-template-download',
+    ),
+
     # Отчеты
     path(
         'projects/<int:project_id>/reports/',
         ReportListView.as_view(),
-        name='reports'
+        name='reports',
     ),
     path(
         'projects/<int:project_id>/reports/generate/',
         GenerateReportsView.as_view(),
-        name='generate-reports'
+        name='generate-reports',
     ),
     path(
         'projects/<int:project_id>/reports/summary/',
         ReportSummaryView.as_view(),
-        name='reports-summary'
+        name='reports-summary',
     ),
     path(
         'reports/my/',
         MyReportsView.as_view(),
-        name='my-reports'
+        name='my-reports',
     ),
     path(
         'reports/<int:report_id>/',
         ReportDetailView.as_view(),
-        name='report-detail'
+        name='report-detail',
     ),
     path(
-        'reports/<int:report_id>/submit/',
-        ReportSubmitView.as_view(),
-        name='report-submit'
+        'reports/<int:report_id>/upload/',
+        ReportUploadView.as_view(),
+        name='report-upload',
+    ),
+    path(
+        'reports/<int:report_id>/download/',
+        ReportDownloadView.as_view(),
+        name='report-download',
     ),
     path(
         'reports/<int:report_id>/review/',
         ReportReviewView.as_view(),
-        name='report-review'
+        name='report-review',
     ),
     path(
         'reports/<int:report_id>/collect-tasks/',
         ReportCollectTasksView.as_view(),
-        name='report-collect-tasks'
+        name='report-collect-tasks',
     ),
 ]

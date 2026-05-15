@@ -379,6 +379,12 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
             </button>
             <button
               className={`btn btn-outline ${styles.actionBtn}`}
+              onClick={() => navigate(`/projects/${id}/gost`)}
+            >
+              Конструктор ГОСТ
+            </button>
+            <button
+              className={`btn btn-outline ${styles.actionBtn}`}
               onClick={() => navigate(`/projects/${id}/join-requests`)}
             >
               Заявки на вступление

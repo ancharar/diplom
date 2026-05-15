@@ -30,6 +30,20 @@ def create_periodic_reports(project_id: int, template_id: int = None):
             start = today.replace(day=1)
             next_month = today.replace(day=28) + timedelta(days=4)
             end = next_month - timedelta(days=next_month.day)
+        elif template.frequency == 'quarterly':
+            quarter = (today.month - 1) // 3
+            start_month = quarter * 3 + 1
+            start = today.replace(month=start_month, day=1)
+            end_month = start_month + 2
+            end = today.replace(
+                month=end_month,
+                day=28,
+            ) + timedelta(days=4)
+            end = end - timedelta(days=end.day)
+        elif template.frequency == 'manual':
+            # «По требованию» — период = текущая неделя
+            start = today - timedelta(days=today.weekday())
+            end = start + timedelta(days=6)
         else:
             continue
         
@@ -168,32 +182,33 @@ def get_project_reports_summary(project_id: int, owner_id: int = None):
     }
 
 
-def submit_report(report_id: int, user_id: int, data: dict):
-    """Сдача отчета."""
-    report = Report.objects.get(id=report_id, user_id=user_id)
-    
-    if report.status in ['submitted', 'reviewed']:
-        raise ValueError('Отчет уже сдан')
-    
-    report.answers = data.get('answers', {})
-    report.tasks_data = data.get('tasks_data', report.tasks_data)
-    report.status = 'submitted'
-    report.submitted_at = timezone.now()
-    report.save()
-    
-    # Обновляем статусы задач в отчете
-    report_tasks = data.get('report_tasks', [])
-    for task_data in report_tasks:
-        ReportTask.objects.filter(
-            report=report,
-            task_id=task_data.get('task_id')
-        ).update(
-            status_after=task_data.get('status_after', ''),
-            time_spent=task_data.get('time_spent'),
-            comment=task_data.get('comment', '')
-        )
-    
-    return report
+# LEGACY: JSON-based questions (disabled)
+# def submit_report(report_id: int, user_id: int, data: dict):
+#     """Сдача отчета."""
+#     report = Report.objects.get(id=report_id, user_id=user_id)
+#
+#     if report.status in ['submitted', 'reviewed']:
+#         raise ValueError('Отчет уже сдан')
+#
+#     report.answers = data.get('answers', {})
+#     report.tasks_data = data.get('tasks_data', report.tasks_data)
+#     report.status = 'submitted'
+#     report.submitted_at = timezone.now()
+#     report.save()
+#
+#     report_tasks = data.get('report_tasks', [])
+#     for task_data in report_tasks:
+#         ReportTask.objects.filter(
+#             report=report,
+#             task_id=task_data.get('task_id')
+#         ).update(
+#             status_after=task_data.get('status_after', ''),
+#             time_spent=task_data.get('time_spent'),
+#             comment=task_data.get('comment', '')
+#         )
+#
+#     return report
+# LEGACY: JSON-based questions (disabled)
 
 
 def review_report(report_id: int, reviewer_id: int, action: str, comment: str = ''):

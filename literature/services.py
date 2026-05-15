@@ -8,7 +8,11 @@ import requests as http_requests
 from bson import ObjectId
 from django.core.exceptions import ValidationError
 
-from .mongo import get_files_collection, get_sources_collection
+from .mongo import (
+    get_files_collection,
+    get_gost_templates_collection,
+    get_sources_collection,
+)
 
 # ── Валидация файлов ─────────────────────────────────────────────────────────
 
@@ -214,3 +218,184 @@ def delete_file(file_id: str) -> bool:
     """Удалить файл."""
     result = get_files_collection().delete_one({'_id': ObjectId(file_id)})
     return result.deleted_count > 0
+
+
+# ── ГОСТ-шаблоны ─────────────────────────────────────────────────────────────
+
+SEPARATOR_MAP = {
+    'slash': ' / ',
+    'double_slash': ' // ',
+    'dash': ' \u2013 ',
+    'dot_dash': '. \u2013 ',
+    'comma': ', ',
+    'dot': '. ',
+    'colon': ' : ',
+    'number_sign': '\u2116 ',
+    'volume_sign': '\u0422. ',
+    'pages_sign_ru': '\u0421. ',
+    'pages_sign_en': 'P. ',
+    'et_al': '[\u0438 \u0434\u0440.]',
+    'url_prefix': '\u2013 URL: ',
+    'electronic_suffix': ' \u2013 \u0422\u0435\u043a\u0441\u0442 : \u044d\u043b\u0435\u043a\u0442\u0440\u043e\u043d\u043d\u044b\u0439.',
+    'direct_suffix': ' \u2013 \u0422\u0435\u043a\u0441\u0442 : \u043d\u0435\u043f\u043e\u0441\u0440\u0435\u0434\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439.',
+}
+
+SOURCE_TYPES = [
+    'journal_article',
+    'book',
+    'collection_article',
+    'electronic_resource',
+    'newspaper_article',
+    'dissertation',
+]
+
+
+def _serialize_gost_template(doc: dict) -> dict:
+    """Преобразует MongoDB-документ шаблона в JSON-совместимый словарь."""
+    doc['id'] = str(doc.pop('_id'))
+    return doc
+
+
+def list_gost_templates(project_id: int) -> list[dict]:
+    """Список ГОСТ-шаблонов проекта."""
+    col = get_gost_templates_collection()
+    docs = col.find({'project_id': project_id}).sort('created_at', -1)
+    return [_serialize_gost_template(d) for d in docs]
+
+
+def get_gost_template(template_id: str) -> dict | None:
+    """Получить ГОСТ-шаблон по ID."""
+    doc = get_gost_templates_collection().find_one(
+        {'_id': ObjectId(template_id)},
+    )
+    return _serialize_gost_template(doc) if doc else None
+
+
+def create_gost_template(data: dict) -> dict:
+    """Создать ГОСТ-шаблон."""
+    doc = {
+        'project_id': data['project_id'],
+        'source_type': data['source_type'],
+        'blocks': data.get('blocks', []),
+        'created_by': data['created_by'],
+        'created_at': datetime.now(timezone.utc),
+        'updated_at': datetime.now(timezone.utc),
+    }
+    result = get_gost_templates_collection().insert_one(doc)
+    doc['_id'] = result.inserted_id
+    return _serialize_gost_template(doc)
+
+
+def update_gost_template(template_id: str, data: dict) -> dict | None:
+    """Обновить ГОСТ-шаблон."""
+    update_fields = {
+        k: v for k, v in data.items()
+        if k not in ('id', '_id', 'project_id', 'created_by', 'created_at')
+    }
+    update_fields['updated_at'] = datetime.now(timezone.utc)
+    col = get_gost_templates_collection()
+    col.update_one(
+        {'_id': ObjectId(template_id)},
+        {'$set': update_fields},
+    )
+    return get_gost_template(template_id)
+
+
+def delete_gost_template(template_id: str) -> bool:
+    """Удалить ГОСТ-шаблон."""
+    result = get_gost_templates_collection().delete_one(
+        {'_id': ObjectId(template_id)},
+    )
+    return result.deleted_count > 0
+
+
+def format_reference(source_data: dict, template: dict) -> str:
+    """Форматировать ссылку по ГОСТ-шаблону.
+
+    Итерирует по блокам шаблона. Для полей (field) подставляет
+    значение из source_data, пропуская пустые. Для разделителей
+    (separator) вставляет литеральную строку, но только если
+    следующее/предыдущее поле не было пропущено.
+    """
+    blocks = template.get('blocks', [])
+    parts: list[str] = []
+
+    # Предварительно собираем пары (тип, значение/литерал)
+    resolved: list[tuple[str, str | None]] = []
+    for block in blocks:
+        btype = block.get('type')
+        key = block.get('key', '')
+
+        if btype == 'field':
+            val = source_data.get(key, '')
+            if isinstance(val, list):
+                val = ', '.join(str(v) for v in val if v)
+            resolved.append(('field', str(val).strip() if val else None))
+        elif btype == 'separator':
+            if key == 'access_date_wrap':
+                ad = source_data.get('access_date', '')
+                if ad:
+                    resolved.append(
+                        ('separator',
+                         f'(\u0434\u0430\u0442\u0430 \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u044f: {ad})'),
+                    )
+                else:
+                    resolved.append(('separator', None))
+            else:
+                literal = SEPARATOR_MAP.get(key, '')
+                resolved.append(('separator', literal))
+
+    # Сборка: пропускаем разделители рядом с пустыми полями
+    i = 0
+    while i < len(resolved):
+        rtype, rval = resolved[i]
+
+        if rtype == 'field':
+            if rval:
+                parts.append(rval)
+            else:
+                # Пропускаем пустое поле и смежные разделители
+                # Пропускаем предыдущий разделитель, если он был добавлен
+                if parts and i > 0 and resolved[i - 1][0] == 'separator':
+                    parts.pop()
+                # Пропускаем следующий разделитель
+                if (i + 1 < len(resolved)
+                        and resolved[i + 1][0] == 'separator'):
+                    i += 1
+        elif rtype == 'separator':
+            if rval:
+                parts.append(rval)
+
+        i += 1
+
+    return ''.join(parts).strip()
+
+
+def apply_gost_to_source(project_id: int, source_id: str) -> str | None:
+    """Найти подходящий ГОСТ-шаблон и применить к источнику."""
+    source = get_source(source_id)
+    if not source:
+        return None
+
+    source_type = source.get('source_type', '')
+    if not source_type:
+        return None
+
+    col = get_gost_templates_collection()
+    template = col.find_one({
+        'project_id': project_id,
+        'source_type': source_type,
+    })
+    if not template:
+        return None
+
+    template['id'] = str(template.pop('_id'))
+    gost_string = format_reference(source, template)
+
+    # Сохраняем gost_string в источник
+    get_sources_collection().update_one(
+        {'_id': ObjectId(source_id)},
+        {'$set': {'gost_string': gost_string}},
+    )
+
+    return gost_string

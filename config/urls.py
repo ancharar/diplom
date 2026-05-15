@@ -21,7 +21,8 @@ urlpatterns = [
     path('api/v1/projects/<int:project_id>/tasks/', ProjectTaskListCreateView.as_view(), name='project-tasks'),
     path('api/v1/tasks/', include('tasks.urls')),
     path('api/v1/projects/<int:project_id>/literature/', include('literature.urls')),
-    path('api/v1/reports/', include('reports.urls')),  # 👈 ДОБАВЛЕНО
+    path('api/v1/reports/', include('reports.urls')),
+    path('api/v1/publications/', include('publications.urls')),
 
     # OpenAPI-схема и Swagger UI
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -29,6 +30,11 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    from django.conf.urls.static import static
+
     urlpatterns = [
         path('__debug__/', include('debug_toolbar.urls')),
-    ] + urlpatterns
+    ] + urlpatterns + static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )
