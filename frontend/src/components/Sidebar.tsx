@@ -8,8 +8,10 @@ import {
   MenuOpenOutlined,
   MenuOutlined,
   AssessmentOutlined,
+  AdminPanelSettingsOutlined,
 } from '@mui/icons-material';
 import styles from '../styles/Sidebar.module.scss';
+import type { User } from '../types';
 
 const MoleculeIcon = () => (
   <svg
@@ -45,9 +47,10 @@ const MoleculeIcon = () => (
 
 type SidebarProps = {
   onLogout?: () => void;
+  user?: User | null;
 };
 
-export default function Sidebar({ onLogout }: SidebarProps) {
+export default function Sidebar({ onLogout, user }: SidebarProps) {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -110,7 +113,7 @@ export default function Sidebar({ onLogout }: SidebarProps) {
         </NavLink>
 
         <NavLink
-          to="/my-publications"
+          to="/publications"
           title="Мои публикации"
           className={({ isActive }) =>
             `${styles.navItem} ${isActive ? styles.active : ''}`
@@ -119,6 +122,19 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           <DescriptionOutlined />
           <span>Мои публикации</span>
         </NavLink>
+
+        {user?.is_staff && (
+          <NavLink
+            to="/admin"
+            title="Администрирование"
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive ? styles.active : ''}`
+            }
+          >
+            <AdminPanelSettingsOutlined />
+            <span>Админ-панель</span>
+          </NavLink>
+        )}
       </nav>
 
       <button className={styles.logoutButton} onClick={handleLogout} title="Выход">

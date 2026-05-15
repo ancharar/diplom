@@ -1,6 +1,10 @@
 """Представления (views) приложения reports."""
 
+import mimetypes
+
+from django.http import FileResponse
 from rest_framework import status
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,153 +13,230 @@ from rest_framework.views import APIView
 from projects.models import Project, ProjectMembership
 from .models import ReportTemplate, Report
 from .serializers import (
-    ReportTemplateSerializer, ReportSerializer, 
-    ReportSubmitSerializer, ReportReviewSerializer,
-    ReportSummarySerializer
+    ReportTemplateSerializer, ReportSerializer,
+    ReportReviewSerializer,
 )
 from .services import (
     create_periodic_reports, get_project_reports_summary,
-    submit_report, review_report, get_user_reports, collect_tasks_data
+    review_report, get_user_reports, collect_tasks_data,
 )
+
+
+ALLOWED_DOCX_MIME = (
+    'application/vnd.openxmlformats-officedocument'
+    '.wordprocessingml.document'
+)
+
+
+def _validate_docx(file) -> str | None:
+    """Проверить, что файл — .docx. Возвращает ошибку или None."""
+    if not file.name.lower().endswith('.docx'):
+        return 'Допускаются только файлы формата .docx'
+    mime = mimetypes.guess_type(file.name)[0]
+    if mime and mime != ALLOWED_DOCX_MIME:
+        return 'Допускаются только файлы формата .docx'
+    return None
 
 
 class ReportTemplateListCreateView(APIView):
     """Список / создание шаблонов отчетов."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+    parser_classes = (MultiPartParser, JSONParser)
+
     def get(self, request: Request, project_id: int) -> Response:
-        """Получить список шаблонов отчетов проекта."""
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
-            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Только участники проекта могут видеть шаблоны
-        if not ProjectMembership.objects.filter(user=request.user, project=project).exists():
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not ProjectMembership.objects.filter(
+            user=request.user, project=project,
+        ).exists():
             return Response(
                 {'detail': 'Вы не являетесь участником проекта.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         templates = ReportTemplate.objects.filter(project=project)
         serializer = ReportTemplateSerializer(templates, many=True)
         return Response(serializer.data)
-    
+
     def post(self, request: Request, project_id: int) -> Response:
-        """Создать шаблон отчета (только владелец)."""
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
-            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if project.owner_id != request.user.id:
             return Response(
-                {'detail': 'Только владелец проекта может создавать шаблоны отчетов.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Только владелец проекта может '
+                           'создавать шаблоны отчетов.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         serializer = ReportTemplateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(project=project)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED,
+        )
 
 
 class ReportTemplateDetailView(APIView):
     """Детали / обновление / удаление шаблона отчета."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
-    def get(self, request: Request, project_id: int, template_id: int) -> Response:
-        """Получить детали шаблона."""
+    parser_classes = (MultiPartParser, JSONParser)
+
+    def get(self, request: Request, project_id: int,
+            template_id: int) -> Response:
         try:
-            template = ReportTemplate.objects.get(id=template_id, project_id=project_id)
+            template = ReportTemplate.objects.get(
+                id=template_id, project_id=project_id,
+            )
         except ReportTemplate.DoesNotExist:
-            return Response({'detail': 'Шаблон не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         serializer = ReportTemplateSerializer(template)
         return Response(serializer.data)
-    
-    def patch(self, request: Request, project_id: int, template_id: int) -> Response:
-        """Обновить шаблон (только владелец)."""
+
+    def patch(self, request: Request, project_id: int,
+              template_id: int) -> Response:
         try:
             project = Project.objects.get(id=project_id)
-            template = ReportTemplate.objects.get(id=template_id, project_id=project_id)
+            template = ReportTemplate.objects.get(
+                id=template_id, project_id=project_id,
+            )
         except (Project.DoesNotExist, ReportTemplate.DoesNotExist):
-            return Response({'detail': 'Шаблон не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if project.owner_id != request.user.id:
             return Response(
-                {'detail': 'Только владелец проекта может изменять шаблоны отчетов.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Только владелец проекта может '
+                           'изменять шаблоны отчетов.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
-        serializer = ReportTemplateSerializer(template, data=request.data, partial=True)
+
+        serializer = ReportTemplateSerializer(
+            template, data=request.data, partial=True,
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
+
         return Response(serializer.data)
-    
-    def delete(self, request: Request, project_id: int, template_id: int) -> Response:
-        """Удалить шаблон (только владелец)."""
+
+    def delete(self, request: Request, project_id: int,
+               template_id: int) -> Response:
         try:
             project = Project.objects.get(id=project_id)
-            template = ReportTemplate.objects.get(id=template_id, project_id=project_id)
+            template = ReportTemplate.objects.get(
+                id=template_id, project_id=project_id,
+            )
         except (Project.DoesNotExist, ReportTemplate.DoesNotExist):
-            return Response({'detail': 'Шаблон не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if project.owner_id != request.user.id:
             return Response(
-                {'detail': 'Только владелец проекта может удалять шаблоны отчетов.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Только владелец проекта может '
+                           'удалять шаблоны отчетов.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         template.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class ReportTemplateDownloadView(APIView):
+    """Скачивание файла шаблона отчета (.docx)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, project_id: int,
+            template_id: int) -> Response:
+        try:
+            template = ReportTemplate.objects.get(
+                id=template_id, project_id=project_id,
+            )
+        except ReportTemplate.DoesNotExist:
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not template.template_file:
+            return Response(
+                {'detail': 'Файл шаблона не загружен.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return FileResponse(
+            template.template_file.open('rb'),
+            as_attachment=True,
+            filename=template.template_file.name.split('/')[-1],
+        )
+
+
 class ReportListView(APIView):
     """Список отчетов проекта."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def get(self, request: Request, project_id: int) -> Response:
-        """Получить список отчетов."""
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
-            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        if not ProjectMembership.objects.filter(user=request.user, project=project).exists():
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not ProjectMembership.objects.filter(
+            user=request.user, project=project,
+        ).exists():
             return Response(
                 {'detail': 'Вы не являетесь участником проекта.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
-        reports = Report.objects.filter(template__project=project).select_related('user', 'template')
-        
-        # Фильтр по пользователю
+
+        reports = Report.objects.filter(
+            template__project=project,
+        ).select_related('user', 'template')
+
         user_id = request.query_params.get('user_id')
         if user_id:
             reports = reports.filter(user_id=user_id)
-        
-        # Фильтр по статусу
+
         status_filter = request.query_params.get('status')
         if status_filter:
             reports = reports.filter(status=status_filter)
-        
+
         serializer = ReportSerializer(reports, many=True)
         return Response(serializer.data)
 
 
 class MyReportsView(APIView):
     """Мои отчеты."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def get(self, request: Request) -> Response:
-        """Получить отчеты текущего пользователя."""
         project_id = request.query_params.get('project_id')
         reports = get_user_reports(request.user.id, project_id)
         serializer = ReportSerializer(reports, many=True)
@@ -164,163 +245,255 @@ class MyReportsView(APIView):
 
 class GenerateReportsView(APIView):
     """Создание периодических отчетов (только владелец)."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def post(self, request: Request, project_id: int) -> Response:
-        """Создать отчеты на период."""
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
-            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if project.owner_id != request.user.id:
             return Response(
-                {'detail': 'Только владелец проекта может создавать отчеты.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Только владелец проекта может '
+                           'создавать отчеты.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         template_id = request.data.get('template_id')
-        created_count = create_periodic_reports(project_id, template_id)
-        
+        created_count = create_periodic_reports(
+            project_id, template_id,
+        )
+
         return Response({
             'message': f'Создано {created_count} отчетов',
-            'created_count': created_count
+            'created_count': created_count,
         })
 
 
 class ReportDetailView(APIView):
     """Детали отчета."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def get(self, request: Request, report_id: int) -> Response:
-        """Получить детали отчета."""
         try:
-            report = Report.objects.select_related('user', 'template').get(id=report_id)
+            report = Report.objects.select_related(
+                'user', 'template',
+            ).get(id=report_id)
         except Report.DoesNotExist:
-            return Response({'detail': 'Отчет не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Проверяем доступ
+            return Response(
+                {'detail': 'Отчет не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         project = report.template.project
-        is_member = ProjectMembership.objects.filter(user=request.user, project=project).exists()
+        is_member = ProjectMembership.objects.filter(
+            user=request.user, project=project,
+        ).exists()
         is_owner = project.owner_id == request.user.id
         is_author = report.user_id == request.user.id
-        
+
         if not (is_member and (is_author or is_owner)):
             return Response(
                 {'detail': 'У вас нет доступа к этому отчету.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         serializer = ReportSerializer(report)
         return Response(serializer.data)
 
 
-class ReportSubmitView(APIView):
-    """Сдача отчета."""
-    
+class ReportUploadView(APIView):
+    """Загрузка заполненного отчета (.docx) участником."""
+
     permission_classes = (IsAuthenticated,)
-    
+    parser_classes = (MultiPartParser,)
+
     def post(self, request: Request, report_id: int) -> Response:
-        """Сдать отчет."""
         try:
             report = Report.objects.get(id=report_id)
         except Report.DoesNotExist:
-            return Response({'detail': 'Отчет не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Отчет не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if report.user_id != request.user.id:
             return Response(
-                {'detail': 'Вы не можете сдать чужой отчет.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Вы не можете загрузить файл '
+                           'для чужого отчета.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
-        if report.status in ['submitted', 'reviewed']:
+
+        if report.status in ['reviewed']:
             return Response(
-                {'detail': 'Отчет уже сдан.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'detail': 'Отчет уже проверен.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
-        serializer = ReportSubmitSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
+
+        uploaded = request.FILES.get('file')
+        if not uploaded:
+            return Response(
+                {'detail': 'Файл не передан.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        err = _validate_docx(uploaded)
+        if err:
+            return Response(
+                {'detail': err},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        report.submitted_file = uploaded
+        report.status = 'submitted'
+        from django.utils import timezone
+        report.submitted_at = timezone.now()
+        report.save()
+
+        return Response(ReportSerializer(report).data)
+
+
+class ReportDownloadView(APIView):
+    """Скачивание загруженного отчета (.docx)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, report_id: int) -> Response:
         try:
-            report = submit_report(report_id, request.user.id, serializer.validated_data)
-            return Response(ReportSerializer(report).data)
-        except ValueError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            report = Report.objects.select_related(
+                'template__project',
+            ).get(id=report_id)
+        except Report.DoesNotExist:
+            return Response(
+                {'detail': 'Отчет не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not report.submitted_file:
+            return Response(
+                {'detail': 'Файл отчета не загружен.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        project = report.template.project
+        is_owner = project.owner_id == request.user.id
+        is_author = report.user_id == request.user.id
+
+        if not (is_author or is_owner):
+            return Response(
+                {'detail': 'У вас нет доступа к этому файлу.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return FileResponse(
+            report.submitted_file.open('rb'),
+            as_attachment=True,
+            filename=report.submitted_file.name.split('/')[-1],
+        )
+
+
+# LEGACY: JSON-based questions (disabled)
+# class ReportSubmitView(APIView):
+#     """Сдача отчета (JSON-ответы)."""
+#     permission_classes = (IsAuthenticated,)
+#     def post(self, request, report_id):
+#         ...
+# LEGACY: JSON-based questions (disabled)
 
 
 class ReportReviewView(APIView):
     """Проверка отчета (только владелец)."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def post(self, request: Request, report_id: int) -> Response:
-        """Проверить отчет."""
         serializer = ReportReviewSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         try:
             report = review_report(
                 report_id,
                 request.user.id,
                 serializer.validated_data['status'],
-                serializer.validated_data.get('review_comment', '')
+                serializer.validated_data.get(
+                    'review_comment', '',
+                ),
             )
             return Response(ReportSerializer(report).data)
         except PermissionError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         except Report.DoesNotExist:
-            return Response({'detail': 'Отчет не найден.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail': 'Отчет не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class ReportSummaryView(APIView):
     """Сводка по отчетам проекта."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def get(self, request: Request, project_id: int) -> Response:
-        """Получить сводную статистику."""
         try:
             project = Project.objects.get(id=project_id)
         except Project.DoesNotExist:
-            return Response({'detail': 'Проект не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        if not ProjectMembership.objects.filter(user=request.user, project=project).exists():
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not ProjectMembership.objects.filter(
+            user=request.user, project=project,
+        ).exists():
             return Response(
                 {'detail': 'Вы не являетесь участником проекта.'},
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
-        summary = get_project_reports_summary(project_id, request.user.id)
-        
+
+        summary = get_project_reports_summary(
+            project_id, request.user.id,
+        )
+
         if summary is None:
             return Response(
-                {'detail': 'Только владелец проекта может видеть сводку.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Только владелец проекта может '
+                           'видеть сводку.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         return Response(summary)
 
 
 class ReportCollectTasksView(APIView):
     """Сбор данных о задачах для отчета."""
-    
+
     permission_classes = (IsAuthenticated,)
-    
+
     def get(self, request: Request, report_id: int) -> Response:
-        """Получить актуальные данные о задачах для отчета."""
         try:
             report = Report.objects.get(id=report_id)
         except Report.DoesNotExist:
-            return Response({'detail': 'Отчет не найден.'}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {'detail': 'Отчет не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         if report.user_id != request.user.id:
             return Response(
-                {'detail': 'Вы не можете получить данные для чужого отчета.'},
-                status=status.HTTP_403_FORBIDDEN
+                {'detail': 'Вы не можете получить данные '
+                           'для чужого отчета.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         tasks_data = collect_tasks_data(report)
         return Response(tasks_data)

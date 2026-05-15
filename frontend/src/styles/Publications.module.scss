@@ -1,0 +1,305 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #17323b;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  margin-top: 4px;
+  color: #5f747c;
+  font-size: 14px;
+}
+
+.extractSection {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.extractTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #17323b;
+  margin: 0 0 16px;
+}
+
+.extractForm {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+
+  input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #238f76;
+    }
+  }
+}
+
+.confidenceBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.confidenceHigh {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.confidenceMedium {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.confidenceLow {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.metadataPreview {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8faf8;
+  border-radius: 12px;
+  border: 1px solid #e2efeb;
+}
+
+.metadataField {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+
+  span:first-child {
+    color: #5f747c;
+    font-weight: 500;
+    min-width: 100px;
+  }
+
+  span:last-child {
+    color: #17323b;
+    word-break: break-word;
+  }
+}
+
+.metadataActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pubList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pubCard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.pubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pubTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #17323b;
+  margin: 0 0 4px;
+}
+
+.pubAuthors {
+  font-size: 13px;
+  color: #5f747c;
+}
+
+.pubMeta {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e9ecef;
+  font-size: 13px;
+  color: #6c757d;
+  flex-wrap: wrap;
+}
+
+.pubGost {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f0f7f5;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #17323b;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.pubActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.editBtn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #e3f2fd;
+  color: #2196f3;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #bbdefb;
+  }
+}
+
+.deleteBtn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffebee;
+  color: #f44336;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #ffcdd2;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.emptyStateText {
+  font-size: 14px;
+}
+
+.error {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(180, 90, 90, 0.1);
+  border: 1px solid rgba(180, 90, 90, 0.2);
+  color: #b45a5a;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+
+  input,
+  textarea {
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: #238f76;
+    }
+  }
+
+  textarea {
+    min-height: 60px;
+    resize: vertical;
+  }
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+
+  input {
+    flex: 1;
+  }
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .extractForm {
+    flex-direction: column;
+  }
+
+  .pubHeader {
+    flex-direction: column;
+  }
+
+  .formRow {
+    flex-direction: column;
+  }
+}

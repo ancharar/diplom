@@ -43,9 +43,27 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'full_name', 'is_active', 'created_at', 'updated_at')
-        # ROLE_DISABLED: убрано 'role' из fields
-        read_only_fields = ('id', 'email', 'is_active', 'created_at', 'updated_at')
+        fields = (
+            'id', 'email', 'full_name', 'is_active',
+            'is_staff', 'is_superuser',
+            'created_at', 'updated_at',
+        )
+        read_only_fields = (
+            'id', 'email', 'is_active', 'is_staff', 'is_superuser',
+            'created_at', 'updated_at',
+        )
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Сериализатор пользователя для администратора."""
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'email', 'full_name', 'is_active', 'is_blocked',
+            'is_staff', 'is_superuser', 'created_at', 'updated_at',
+        )
+        read_only_fields = ('id', 'email', 'created_at', 'updated_at')
 
 
 class LoginSerializer(serializers.Serializer):

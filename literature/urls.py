@@ -15,4 +15,15 @@ urlpatterns = [
     path('files/', views.FileListUploadView.as_view(), name='file-list'),
     path('files/<str:file_id>/download/', views.FileDownloadView.as_view(), name='file-download'),
     path('files/<str:file_id>/', views.FileDeleteView.as_view(), name='file-delete'),
+    # ГОСТ-шаблоны
+    path(
+        'gost-templates/',
+        views.GostTemplateListCreateView.as_view(),
+        name='gost-template-list',
+    ),
+    path(
+        'gost-templates/<str:template_id>/',
+        views.GostTemplateDetailView.as_view(),
+        name='gost-template-detail',
+    ),
 ]

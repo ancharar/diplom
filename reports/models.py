@@ -37,13 +37,22 @@ class ReportTemplate(models.Model):
         validators=[MinValueValidator(1)]
     )
     
-    # Структура отчета (JSON)
-    questions = models.JSONField(
-        'Вопросы',
-        default=list,
-        help_text='Список вопросов в формате: [{"id": "q1", "label": "Вопрос", "type": "text/select/date"}]'
+    # LEGACY: JSON-based questions (disabled)
+    # questions = models.JSONField(
+    #     'Вопросы',
+    #     default=list,
+    #     help_text='Список вопросов в формате: '
+    #               '[{"id": "q1", "label": "Вопрос", '
+    #               '"type": "text/select/date"}]'
+    # )
+    # LEGACY: JSON-based questions (disabled)
+
+    template_file = models.FileField(
+        'Файл шаблона (.docx)',
+        upload_to='report_templates/%Y/%m/',
+        blank=True,
     )
-    
+
     is_active = models.BooleanField('Активен', default=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата обновления', auto_now=True)
@@ -84,8 +93,19 @@ class Report(models.Model):
     period_end = models.DateField('Конец периода')
     deadline = models.DateTimeField('Дедлайн')
     
-    answers = models.JSONField('Ответы', default=dict)
-    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
+    # LEGACY: JSON-based questions (disabled)
+    # answers = models.JSONField('Ответы', default=dict)
+    # LEGACY: JSON-based questions (disabled)
+
+    submitted_file = models.FileField(
+        'Загруженный отчет (.docx)',
+        upload_to='report_submissions/%Y/%m/',
+        blank=True,
+    )
+    status = models.CharField(
+        'Статус', max_length=20,
+        choices=STATUS_CHOICES, default='pending',
+    )
     
     submitted_at = models.DateTimeField('Дата сдачи', null=True, blank=True)
     reviewed_by = models.ForeignKey(

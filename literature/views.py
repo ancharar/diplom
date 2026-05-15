@@ -250,3 +250,121 @@ class ArxivSearchView(APIView):
             'start': start,
             'max_results': max_results,
         })
+
+
+class GostTemplateListCreateView(APIView):
+    """Список / создание ГОСТ-шаблонов проекта."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def _get_project(self, project_id: int, request: Request):
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return None, Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return project, None
+
+    def get(self, request: Request, project_id: int) -> Response:
+        project, err = self._get_project(project_id, request)
+        if err:
+            return err
+        perm = IsProjectMember()
+        if not perm.has_object_permission(request, self, project):
+            return Response(
+                {'detail': perm.message},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        templates = services.list_gost_templates(project_id)
+        return Response(templates)
+
+    def post(self, request: Request, project_id: int) -> Response:
+        project, err = self._get_project(project_id, request)
+        if err:
+            return err
+        if project.owner_id != request.user.id:
+            return Response(
+                {'detail': 'Только владелец проекта может '
+                           'создавать ГОСТ-шаблоны.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        data = request.data.copy()
+        data['project_id'] = project_id
+        data['created_by'] = request.user.id
+        source_type = data.get('source_type', '')
+        if source_type not in services.SOURCE_TYPES:
+            return Response(
+                {'detail': f'Недопустимый тип источника: '
+                           f'{source_type}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        template = services.create_gost_template(data)
+        return Response(template, status=status.HTTP_201_CREATED)
+
+
+class GostTemplateDetailView(APIView):
+    """Обновление / удаление ГОСТ-шаблона."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request: Request, project_id: int,
+            template_id: str) -> Response:
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if project.owner_id != request.user.id:
+            return Response(
+                {'detail': 'Только владелец проекта может '
+                           'изменять ГОСТ-шаблоны.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            template = services.update_gost_template(
+                template_id, request.data,
+            )
+        except InvalidId:
+            return Response(
+                {'detail': 'Неверный ID.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not template:
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(template)
+
+    def delete(self, request: Request, project_id: int,
+               template_id: str) -> Response:
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if project.owner_id != request.user.id:
+            return Response(
+                {'detail': 'Только владелец проекта может '
+                           'удалять ГОСТ-шаблоны.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            deleted = services.delete_gost_template(template_id)
+        except InvalidId:
+            return Response(
+                {'detail': 'Неверный ID.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not deleted:
+            return Response(
+                {'detail': 'Шаблон не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)

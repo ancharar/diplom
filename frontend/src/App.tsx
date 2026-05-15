@@ -17,6 +17,9 @@ import ProfilePage from './pages/ProfilePage';
 import CreateProjectPage from './pages/CreateProjectPage';
 import MyReportsPage from './pages/MyReportsPage';
 import ReportsPage from './pages/ReportsPage';
+import AdminPage from './pages/AdminPage';
+import PublicationsPage from './pages/PublicationsPage';
+import GostConstructorPage from './pages/GostConstructorPage';
 
 import type { User } from './types';
 
@@ -31,7 +34,7 @@ function AppLayout({
 }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar onLogout={onLogout} />
+      <Sidebar onLogout={onLogout} user={user} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Header user={user} />
@@ -133,6 +136,17 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/projects/:id/gost"
+            element={
+              <PrivateRoute>
+                <AppLayout onLogout={handleLogout} user={user}>
+                  <GostConstructorPage />
+                </AppLayout>
+              </PrivateRoute>
+            }
+          />
+
           {/* TASKS */}
           <Route
             path="/tasks/:id"
@@ -157,6 +171,18 @@ export default function App() {
             }
           />
 
+          {/* PUBLICATIONS */}
+          <Route
+            path="/publications"
+            element={
+              <PrivateRoute>
+                <AppLayout onLogout={handleLogout} user={user}>
+                  <PublicationsPage />
+                </AppLayout>
+              </PrivateRoute>
+            }
+          />
+
           {/* REQUESTS */}
           <Route
             path="/my-requests"
@@ -164,6 +190,18 @@ export default function App() {
               <PrivateRoute>
                 <AppLayout onLogout={handleLogout} user={user}>
                   <MyRequestsPage />
+                </AppLayout>
+              </PrivateRoute>
+            }
+          />
+
+          {/* ADMIN */}
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AppLayout onLogout={handleLogout} user={user}>
+                  <AdminPage user={user} />
                 </AppLayout>
               </PrivateRoute>
             }

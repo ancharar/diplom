@@ -5,7 +5,7 @@ export interface User {
   email: string;
   full_name: string;
 
-  // 👇 анкета (лежит прямо в User)
+  // анкета
   university?: string;
   position?: string;
   bio?: string;
@@ -13,6 +13,21 @@ export interface User {
   avatar_url?: string;
 
   is_active: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+  is_blocked?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  is_blocked: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -84,8 +99,10 @@ export interface LiteratureSource {
   tags: string[];
 
   type?: 'manual' | 'publication';
+  source_type?: string;
   doi?: string;
   source?: string;
+  gost_string?: string;
 
   added_by: number;
   created_at: string;
@@ -142,16 +159,8 @@ export interface JoinRequest {
 }
 
 // ============================================
-// 🆕 ТИПЫ ДЛЯ ОТЧЕТОВ
+// ТИПЫ ДЛЯ ОТЧЕТОВ
 // ============================================
-
-export interface ReportQuestion {
-  id: string;
-  label: string;
-  type: 'text' | 'textarea' | 'select' | 'date' | 'number';
-  options?: string[];
-  required?: boolean;
-}
 
 export interface ReportTemplate {
   id: number;
@@ -160,7 +169,8 @@ export interface ReportTemplate {
   description: string;
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'manual';
   deadline_days: number;
-  questions: ReportQuestion[];
+  template_file: string | null;
+  has_template_file: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -194,7 +204,8 @@ export interface Report {
   period_start: string;
   period_end: string;
   deadline: string;
-  answers: Record<string, string>;
+  submitted_file: string | null;
+  has_submitted_file: boolean;
   status: 'pending' | 'draft' | 'submitted' | 'reviewed' | 'rejected';
   status_display: string;
   is_overdue: boolean;
@@ -236,4 +247,59 @@ export interface Notification {
   is_read: boolean;
   link: string | null;
   created_at: string;
+}
+
+// ============================================
+// ТИПЫ ДЛЯ ПУБЛИКАЦИЙ
+// ============================================
+
+export interface Publication {
+  id: number;
+  title: string;
+  authors: string[];
+  year: number | null;
+  journal: string;
+  volume: string;
+  issue: string;
+  pages: string;
+  url: string;
+  doi: string;
+  raw_url: string;
+  gost_string: string;
+  extraction_confidence: 'high' | 'medium' | 'low';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExtractedMetadata {
+  title: string;
+  authors: string[];
+  year: number | null;
+  journal: string;
+  volume: string;
+  issue: string;
+  pages: string;
+  url: string;
+  doi: string;
+  raw_url: string;
+  extraction_confidence: 'high' | 'medium' | 'low';
+}
+
+// ============================================
+// ТИПЫ ДЛЯ ГОСТ-ШАБЛОНОВ
+// ============================================
+
+export interface GostBlock {
+  type: 'field' | 'separator';
+  key: string;
+}
+
+export interface GostTemplate {
+  id: string;
+  project_id: number;
+  source_type: string;
+  blocks: GostBlock[];
+  created_by: number;
+  created_at: string;
+  updated_at: string;
 }

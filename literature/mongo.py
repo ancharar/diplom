@@ -22,3 +22,8 @@ def get_sources_collection():
 def get_files_collection():
     """Коллекция файлов / документов."""
     return get_db()['files']
+
+
+def get_gost_templates_collection():
+    """Коллекция ГОСТ-шаблонов."""
+    return get_db()['gost_templates']

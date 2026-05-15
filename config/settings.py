@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'projects.apps.ProjectsConfig',
     'tasks.apps.TasksConfig',
     'literature.apps.LiteratureConfig',
-    'reports.apps.ReportsConfig',  # 👈 ИСПРАВЛЕНО (один раз)
+    'reports.apps.ReportsConfig',
+    'publications.apps.PublicationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -202,4 +203,5 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:5173',
+    'http://localhost:5174',
 ]
