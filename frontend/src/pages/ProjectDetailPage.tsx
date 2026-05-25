@@ -64,8 +64,14 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
 
   const [sources, setSources] = useState<LiteratureSource[]>([]);
   const [showSourceForm, setShowSourceForm] = useState(false);
-  const [sourceForm, setSourceForm] = useState({ title: '', authors: '', year: '', url: '', description: '', tags: '' });
+  const [sourceForm, setSourceForm] = useState({
+    title: '', authors: '', year: '', url: '', description: '', tags: '', source_type: '',
+    journal: '', volume: '', issue: '', pages: '', doi: '', publisher: '', city: '', total_pages: '', access_date: '',
+  });
+  const [arxivSourceTypes, setArxivSourceTypes] = useState<Record<string, string>>({});
   const [sourceError, setSourceError] = useState('');
+  const [gostEditing, setGostEditing] = useState<Set<string>>(new Set());
+  const [gostDraft, setGostDraft] = useState<Record<string, string>>({});
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [fileDesc, setFileDesc] = useState('');
@@ -215,6 +221,25 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     }
   };
 
+  const handleGostEdit = (source: LiteratureSource) => {
+    setGostDraft((prev) => ({ ...prev, [source.id]: source.gost_string ?? '' }));
+    setGostEditing((prev) => new Set(prev).add(source.id));
+  };
+
+  const handleGostCancel = (sourceId: string) => {
+    setGostEditing((prev) => { const s = new Set(prev); s.delete(sourceId); return s; });
+  };
+
+  const handleGostSave = async (sourceId: string) => {
+    try {
+      await client.patch(`/projects/${id}/literature/sources/${sourceId}/`, {
+        gost_string: gostDraft[sourceId],
+      });
+      setGostEditing((prev) => { const s = new Set(prev); s.delete(sourceId); return s; });
+      fetchSources();
+    } catch { /* ignore */ }
+  };
+
   const handleCreateSource = async (e: React.FormEvent) => {
     e.preventDefault();
     setSourceError('');
@@ -225,9 +250,22 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       if (sourceForm.url) payload.url = sourceForm.url;
       if (sourceForm.description) payload.description = sourceForm.description;
       if (sourceForm.tags) payload.tags = sourceForm.tags.split(',').map((t) => t.trim());
+      if (sourceForm.source_type) payload.source_type = sourceForm.source_type;
+      if (sourceForm.journal) payload.journal = sourceForm.journal;
+      if (sourceForm.volume) payload.volume = sourceForm.volume;
+      if (sourceForm.issue) payload.issue = sourceForm.issue;
+      if (sourceForm.pages) payload.pages = sourceForm.pages;
+      if (sourceForm.doi) payload.doi = sourceForm.doi;
+      if (sourceForm.publisher) payload.publisher = sourceForm.publisher;
+      if (sourceForm.city) payload.city = sourceForm.city;
+      if (sourceForm.total_pages) payload.total_pages = sourceForm.total_pages;
+      if (sourceForm.access_date) payload.access_date = sourceForm.access_date;
       await client.post(`/projects/${id}/literature/sources/`, payload);
       setShowSourceForm(false);
-      setSourceForm({ title: '', authors: '', year: '', url: '', description: '', tags: '' });
+      setSourceForm({
+        title: '', authors: '', year: '', url: '', description: '', tags: '', source_type: '',
+        journal: '', volume: '', issue: '', pages: '', doi: '', publisher: '', city: '', total_pages: '', access_date: '',
+      });
       showSuccess('Источник добавлен');
       fetchSources();
     } catch {
@@ -307,6 +345,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
           ? result.summary.substring(0, 497) + '...'
           : result.summary,
         tags: result.categories,
+        source_type: arxivSourceTypes[result.arxiv_id] || 'journal_article',
       };
       await client.post(`/projects/${id}/literature/sources/`, payload);
       showSuccess('Статья сохранена в источники');
@@ -616,12 +655,36 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
 
           {showSourceForm && (
             <form className={styles.sourceForm} onSubmit={handleCreateSource}>
-              <input placeholder="Название" value={sourceForm.title} onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })} required />
+              <select value={sourceForm.source_type} onChange={(e) => setSourceForm({ ...sourceForm, source_type: e.target.value })}>
+                <option value="">Тип источника (для ГОСТ)</option>
+                <option value="journal_article">Статья в журнале</option>
+                <option value="book">Книга</option>
+                <option value="collection_article">Статья в сборнике</option>
+                <option value="electronic_resource">Электронный ресурс</option>
+                <option value="newspaper_article">Статья в газете</option>
+                <option value="dissertation">Диссертация</option>
+              </select>
+              <input placeholder="Название *" value={sourceForm.title} onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })} required />
               <input placeholder="Авторы" value={sourceForm.authors} onChange={(e) => setSourceForm({ ...sourceForm, authors: e.target.value })} />
               <input type="number" placeholder="Год" value={sourceForm.year} onChange={(e) => setSourceForm({ ...sourceForm, year: e.target.value })} />
-              <input placeholder="URL" value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} />
-              <textarea placeholder="Описание" value={sourceForm.description} onChange={(e) => setSourceForm({ ...sourceForm, description: e.target.value })} />
-              <input placeholder="Теги (через запятую)" value={sourceForm.tags} onChange={(e) => setSourceForm({ ...sourceForm, tags: e.target.value })} />
+              <input placeholder="Журнал" value={sourceForm.journal} onChange={(e) => setSourceForm({ ...sourceForm, journal: e.target.value })} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
+                <input placeholder="Том" value={sourceForm.volume} onChange={(e) => setSourceForm({ ...sourceForm, volume: e.target.value })} />
+                <input placeholder="Выпуск / №" value={sourceForm.issue} onChange={(e) => setSourceForm({ ...sourceForm, issue: e.target.value })} />
+                <input placeholder="Страницы (41–52)" value={sourceForm.pages} onChange={(e) => setSourceForm({ ...sourceForm, pages: e.target.value })} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
+                <input placeholder="Издательство" value={sourceForm.publisher} onChange={(e) => setSourceForm({ ...sourceForm, publisher: e.target.value })} />
+                <input placeholder="Город издания" value={sourceForm.city} onChange={(e) => setSourceForm({ ...sourceForm, city: e.target.value })} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
+                <input placeholder="Кол-во страниц" value={sourceForm.total_pages} onChange={(e) => setSourceForm({ ...sourceForm, total_pages: e.target.value })} />
+                <input placeholder="DOI" value={sourceForm.doi} onChange={(e) => setSourceForm({ ...sourceForm, doi: e.target.value })} />
+              </div>
+              <input style={{ gridColumn: '1 / -1' }} placeholder="URL" value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} />
+              <input style={{ gridColumn: '1 / -1' }} placeholder="Дата обращения (для эл. ресурсов)" value={sourceForm.access_date} onChange={(e) => setSourceForm({ ...sourceForm, access_date: e.target.value })} />
+              <textarea style={{ gridColumn: '1 / -1' }} placeholder="Описание" value={sourceForm.description} onChange={(e) => setSourceForm({ ...sourceForm, description: e.target.value })} />
+              <input style={{ gridColumn: '1 / -1' }} placeholder="Теги (через запятую)" value={sourceForm.tags} onChange={(e) => setSourceForm({ ...sourceForm, tags: e.target.value })} />
               {sourceError && <p className="error-msg">{sourceError}</p>}
               <button type="submit" className="btn btn-primary">Добавить</button>
             </form>
@@ -642,13 +705,42 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
               </thead>
               <tbody>
                 {sources.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}</td>
-                    <td>{s.authors || '—'}</td>
-                    <td>{s.year || '—'}</td>
-                    <td>{s.tags?.join(', ') || '—'}</td>
-                    <td><button className={styles.removeBtn} onClick={() => handleDeleteSource(s.id)}>×</button></td>
-                  </tr>
+                  <>
+                    <tr key={s.id}>
+                      <td>{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}</td>
+                      <td>{s.authors || '—'}</td>
+                      <td>{s.year || '—'}</td>
+                      <td>{s.tags?.join(', ') || '—'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {!s.gost_string && !gostEditing.has(s.id) && (
+                          <button className="btn btn-outline" style={{ fontSize: 11, padding: '2px 8px', marginRight: 4 }} onClick={() => handleGostEdit(s)}>ГОСТ</button>
+                        )}
+                        <button className={styles.removeBtn} onClick={() => handleDeleteSource(s.id)}>×</button>
+                      </td>
+                    </tr>
+                    {(s.gost_string || gostEditing.has(s.id)) && (
+                      <tr key={`${s.id}-gost`}>
+                        <td colSpan={5} className={styles.gostRow}>
+                          {gostEditing.has(s.id) ? (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                              <textarea
+                                value={gostDraft[s.id] ?? ''}
+                                onChange={(e) => setGostDraft((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                                style={{ flex: 1, fontSize: 13, padding: '6px 10px', borderRadius: 8, border: '1px solid #b2d4cc', resize: 'vertical', minHeight: 60, fontStyle: 'normal' }}
+                              />
+                              <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px', whiteSpace: 'nowrap' }} onClick={() => handleGostSave(s.id)}>Сохранить</button>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 12px', whiteSpace: 'nowrap' }} onClick={() => handleGostCancel(s.id)}>Отмена</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                              <span><span className={styles.gostLabel}>ГОСТ:</span> {s.gost_string}</span>
+                              <button className="btn btn-outline" style={{ fontSize: 12, padding: '2px 10px', whiteSpace: 'nowrap', flexShrink: 0 }} onClick={() => handleGostEdit(s)}>✎ Изменить</button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
                 {sources.length === 0 && (
                   <tr>
@@ -730,6 +822,18 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
                         )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                        <select
+                          value={arxivSourceTypes[r.arxiv_id] ?? 'journal_article'}
+                          onChange={(e) => setArxivSourceTypes((prev) => ({ ...prev, [r.arxiv_id]: e.target.value }))}
+                          style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid #c8ddd8' }}
+                        >
+                          <option value="journal_article">Статья в журнале</option>
+                          <option value="book">Книга</option>
+                          <option value="collection_article">Статья в сборнике</option>
+                          <option value="electronic_resource">Электронный ресурс</option>
+                          <option value="newspaper_article">Статья в газете</option>
+                          <option value="dissertation">Диссертация</option>
+                        </select>
                         <button
                           className="btn btn-primary"
                           onClick={() => handleSaveArxivResult(r)}
