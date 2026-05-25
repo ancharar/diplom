@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import type { GostBlock, GostTemplate } from '../types';
 import styles from '../styles/GostConstructor.module.scss';
@@ -50,6 +50,7 @@ const SEPARATOR_OPTIONS = [
 
 export default function GostConstructorPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<GostTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -148,6 +149,13 @@ export default function GostConstructorPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
+          <button
+            className="btn btn-outline"
+            onClick={() => navigate(`/projects/${projectId}`)}
+            style={{ marginBottom: 12 }}
+          >
+            ← Назад к проекту
+          </button>
           <h1 className={styles.title}>Конструктор ГОСТ</h1>
           <p className={styles.subtitle}>
             Настройка шаблонов библиографических ссылок

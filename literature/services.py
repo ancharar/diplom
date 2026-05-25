@@ -60,9 +60,19 @@ def create_source(data: dict) -> dict:
     """Создать литературный источник."""
     doc = {
         'project_id': data['project_id'],
+        'source_type': data.get('source_type', ''),
         'title': data['title'],
         'authors': data.get('authors', ''),
         'year': data.get('year'),
+        'journal': data.get('journal', ''),
+        'volume': data.get('volume', ''),
+        'issue': data.get('issue', ''),
+        'pages': data.get('pages', ''),
+        'doi': data.get('doi', ''),
+        'publisher': data.get('publisher', ''),
+        'city': data.get('city', ''),
+        'total_pages': data.get('total_pages', ''),
+        'access_date': data.get('access_date', ''),
         'url': data.get('url', ''),
         'description': data.get('description', ''),
         'tags': data.get('tags', []),
@@ -71,8 +81,9 @@ def create_source(data: dict) -> dict:
         'updated_at': datetime.now(timezone.utc),
     }
     result = get_sources_collection().insert_one(doc)
-    doc['_id'] = result.inserted_id
-    return _serialize_source(doc)
+    source_id = str(result.inserted_id)
+    apply_gost_to_source(data['project_id'], source_id)
+    return get_source(source_id)
 
 
 def update_source(source_id: str, data: dict) -> dict | None:
@@ -81,7 +92,12 @@ def update_source(source_id: str, data: dict) -> dict | None:
     update_fields['updated_at'] = datetime.now(timezone.utc)
     col = get_sources_collection()
     col.update_one({'_id': ObjectId(source_id)}, {'$set': update_fields})
-    return get_source(source_id)
+    source = get_source(source_id)
+    if source and 'gost_string' not in data:
+        # Не перезаписываем gost_string если пользователь редактировал его вручную
+        apply_gost_to_source(source['project_id'], source_id)
+        return get_source(source_id)
+    return source
 
 
 def delete_source(source_id: str) -> bool:
@@ -283,7 +299,9 @@ def create_gost_template(data: dict) -> dict:
     }
     result = get_gost_templates_collection().insert_one(doc)
     doc['_id'] = result.inserted_id
-    return _serialize_gost_template(doc)
+    template = _serialize_gost_template(doc)
+    _apply_template_to_all_sources(data['project_id'], template)
+    return template
 
 
 def update_gost_template(template_id: str, data: dict) -> dict | None:
@@ -298,7 +316,10 @@ def update_gost_template(template_id: str, data: dict) -> dict | None:
         {'_id': ObjectId(template_id)},
         {'$set': update_fields},
     )
-    return get_gost_template(template_id)
+    template = get_gost_template(template_id)
+    if template:
+        _apply_template_to_all_sources(template['project_id'], template)
+    return template
 
 
 def delete_gost_template(template_id: str) -> bool:
@@ -369,6 +390,20 @@ def format_reference(source_data: dict, template: dict) -> str:
         i += 1
 
     return ''.join(parts).strip()
+
+
+def _apply_template_to_all_sources(project_id: int, template: dict) -> None:
+    """Применить шаблон ко всем источникам проекта с подходящим source_type."""
+    source_type = template.get('source_type', '')
+    if not source_type:
+        return
+    col = get_sources_collection()
+    for source_doc in col.find({'project_id': project_id, 'source_type': source_type}):
+        gost_string = format_reference(source_doc, template)
+        col.update_one(
+            {'_id': source_doc['_id']},
+            {'$set': {'gost_string': gost_string}},
+        )
 
 
 def apply_gost_to_source(project_id: int, source_id: str) -> str | None:
