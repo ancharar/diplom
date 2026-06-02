@@ -162,6 +162,14 @@ export interface JoinRequest {
 // ТИПЫ ДЛЯ ОТЧЕТОВ
 // ============================================
 
+export interface ReportQuestion {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'date' | 'number';
+  options?: string[];
+  required?: boolean;
+}
+
 export interface ReportTemplate {
   id: number;
   project: number;
@@ -169,6 +177,7 @@ export interface ReportTemplate {
   description: string;
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'manual';
   deadline_days: number;
+  questions: ReportQuestion[];
   template_file: string | null;
   has_template_file: boolean;
   is_active: boolean;
@@ -204,6 +213,7 @@ export interface Report {
   period_start: string;
   period_end: string;
   deadline: string;
+  answers: Record<string, string>;
   submitted_file: string | null;
   has_submitted_file: boolean;
   status: 'pending' | 'draft' | 'submitted' | 'reviewed' | 'rejected';

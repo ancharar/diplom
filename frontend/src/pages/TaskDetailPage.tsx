@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import client from '../api/client';
 import Loader from '../components/Loader';
 import StatusBadge from '../components/StatusBadge';
@@ -126,6 +126,7 @@ function normalizeProjectMembers(data: unknown) {
 
 export default function TaskDetailPage({ user }: TaskDetailPageProps) {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [task, setTask] = useState<Task | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -282,9 +283,18 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Задача #{task.id}</h1>
-        <p className={styles.subtitle}>{task.title}</p>
+      <div className={styles.topActions}>
+        <button
+          className={styles.backBtn}
+          onClick={() => {
+            if (task) {
+              const projectId = getProjectId(task);
+              if (projectId) navigate(`/projects/${projectId}`);
+            }
+          }}
+        >
+          ← Назад к проекту
+        </button>
       </div>
 
       <div className={styles.grid}>

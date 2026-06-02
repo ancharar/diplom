@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 import client from '../api/client';
 import Loader from '../components/Loader';
 import { SkeletonTable } from '../components/Skeleton';
@@ -7,7 +8,7 @@ import StatusBadge from '../components/StatusBadge';
 import JoinRequestModal from '../components/JoinRequestModal';
 import { useToast } from '../contexts/ToastContext';
 import { getErrorMessage } from '../utils/errorMessages';
-import type { Project, ProjectCatalog, Task, User, LiteratureSource, ProjectFile, ArxivResult } from '../types';
+import type { Project, ProjectCatalog, Task, User } from '../types';
 import styles from '../styles/ProjectDetail.module.scss';
 
 interface ProjectDetailPageProps {
@@ -28,7 +29,7 @@ const PRIORITY_LABELS: Record<string, string> = {
   high: 'Высокий',
 };
 
-type TabKey = 'allTasks' | 'myTasks' | 'literature';
+type TabKey = 'allTasks' | 'myTasks';
 
 export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const { id } = useParams<{ id: string }>();
@@ -61,28 +62,6 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', deadline: '', assignee_id: '' });
   const [taskError, setTaskError] = useState('');
-
-  const [sources, setSources] = useState<LiteratureSource[]>([]);
-  const [showSourceForm, setShowSourceForm] = useState(false);
-  const [sourceForm, setSourceForm] = useState({
-    title: '', authors: '', year: '', url: '', description: '', tags: '', source_type: '',
-    journal: '', volume: '', issue: '', pages: '', doi: '', publisher: '', city: '', total_pages: '', access_date: '',
-  });
-  const [arxivSourceTypes, setArxivSourceTypes] = useState<Record<string, string>>({});
-  const [sourceError, setSourceError] = useState('');
-  const [gostEditing, setGostEditing] = useState<Set<string>>(new Set());
-  const [gostDraft, setGostDraft] = useState<Record<string, string>>({});
-
-  const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [fileDesc, setFileDesc] = useState('');
-  const [fileError, setFileError] = useState('');
-
-  // arXiv поиск
-  const [arxivQuery, setArxivQuery] = useState('');
-  const [arxivResults, setArxivResults] = useState<ArxivResult[]>([]);
-  const [arxivLoading, setArxivLoading] = useState(false);
-  const [arxivError, setArxivError] = useState('');
-  const [arxivSaving, setArxivSaving] = useState<Set<string>>(new Set());
 
   const [showJoinModal, setShowJoinModal] = useState(false);
 
@@ -122,20 +101,6 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     } catch { /* ignore */ }
   }, [id, myFilterStatus, myFilterPriority]);
 
-  const fetchSources = async () => {
-    try {
-      const { data } = await client.get<LiteratureSource[]>(`/projects/${id}/literature/sources/`);
-      setSources(data);
-    } catch { /* ignore */ }
-  };
-
-  const fetchFiles = async () => {
-    try {
-      const { data } = await client.get<ProjectFile[]>(`/projects/${id}/literature/files/`);
-      setFiles(data);
-    } catch { /* ignore */ }
-  };
-
   useEffect(() => {
     fetchProject().finally(() => setLoading(false));
   }, [id]);
@@ -150,8 +115,6 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
           await fetchAllTasks();
         } else if (tab === 'myTasks') {
           await fetchMyTasks();
-        } else if (tab === 'literature') {
-          await Promise.all([fetchSources(), fetchFiles()]);
         }
       } finally {
         setTabLoading((prev) => { const s = new Set(prev); s.delete(tab); return s; });
@@ -200,6 +163,21 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     }
   };
 
+  const resetTaskForm = () => {
+    setTaskForm({ title: '', description: '', priority: 'medium', deadline: '', assignee_id: '' });
+    setTaskError('');
+  };
+
+  const openTaskModal = () => {
+    resetTaskForm();
+    setShowTaskForm(true);
+  };
+
+  const closeTaskModal = () => {
+    setShowTaskForm(false);
+    resetTaskForm();
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     setTaskError('');
@@ -209,8 +187,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       if (taskForm.deadline) payload.deadline = taskForm.deadline;
       if (taskForm.assignee_id) payload.assignee_id = taskForm.assignee_id;
       await client.post(`/projects/${id}/tasks/`, payload);
-      setShowTaskForm(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', deadline: '', assignee_id: '' });
+      closeTaskModal();
       showSuccess('Задача создана');
       fetchAllTasks();
       fetchMyTasks();
@@ -221,143 +198,14 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     }
   };
 
-  const handleGostEdit = (source: LiteratureSource) => {
-    setGostDraft((prev) => ({ ...prev, [source.id]: source.gost_string ?? '' }));
-    setGostEditing((prev) => new Set(prev).add(source.id));
-  };
-
-  const handleGostCancel = (sourceId: string) => {
-    setGostEditing((prev) => { const s = new Set(prev); s.delete(sourceId); return s; });
-  };
-
-  const handleGostSave = async (sourceId: string) => {
+  const handleDeleteTask = async (taskId: number) => {
     try {
-      await client.patch(`/projects/${id}/literature/sources/${sourceId}/`, {
-        gost_string: gostDraft[sourceId],
-      });
-      setGostEditing((prev) => { const s = new Set(prev); s.delete(sourceId); return s; });
-      fetchSources();
-    } catch { /* ignore */ }
-  };
-
-  const handleCreateSource = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSourceError('');
-    try {
-      const payload: Record<string, unknown> = { title: sourceForm.title };
-      if (sourceForm.authors) payload.authors = sourceForm.authors;
-      if (sourceForm.year) payload.year = Number(sourceForm.year);
-      if (sourceForm.url) payload.url = sourceForm.url;
-      if (sourceForm.description) payload.description = sourceForm.description;
-      if (sourceForm.tags) payload.tags = sourceForm.tags.split(',').map((t) => t.trim());
-      if (sourceForm.source_type) payload.source_type = sourceForm.source_type;
-      if (sourceForm.journal) payload.journal = sourceForm.journal;
-      if (sourceForm.volume) payload.volume = sourceForm.volume;
-      if (sourceForm.issue) payload.issue = sourceForm.issue;
-      if (sourceForm.pages) payload.pages = sourceForm.pages;
-      if (sourceForm.doi) payload.doi = sourceForm.doi;
-      if (sourceForm.publisher) payload.publisher = sourceForm.publisher;
-      if (sourceForm.city) payload.city = sourceForm.city;
-      if (sourceForm.total_pages) payload.total_pages = sourceForm.total_pages;
-      if (sourceForm.access_date) payload.access_date = sourceForm.access_date;
-      await client.post(`/projects/${id}/literature/sources/`, payload);
-      setShowSourceForm(false);
-      setSourceForm({
-        title: '', authors: '', year: '', url: '', description: '', tags: '', source_type: '',
-        journal: '', volume: '', issue: '', pages: '', doi: '', publisher: '', city: '', total_pages: '', access_date: '',
-      });
-      showSuccess('Источник добавлен');
-      fetchSources();
-    } catch {
-      setSourceError('Ошибка создания источника');
-    }
-  };
-
-  const handleDeleteSource = async (sourceId: string) => {
-    try {
-      await client.delete(`/projects/${id}/literature/sources/${sourceId}/`);
-      fetchSources();
-    } catch { /* ignore */ }
-  };
-
-  const handleUploadFile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFileError('');
-    const form = e.target as HTMLFormElement;
-    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
-    if (!file) { setFileError('Выберите файл'); return; }
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('description', fileDesc);
-    try {
-      await client.post(`/projects/${id}/literature/files/`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setFileDesc('');
-      form.reset();
-      showSuccess('Файл загружен');
-      fetchFiles();
-    } catch {
-      setFileError('Ошибка загрузки файла');
-    }
-  };
-
-  const handleDeleteFile = async (fileId: string) => {
-    try {
-      await client.delete(`/projects/${id}/literature/files/${fileId}/`);
-      fetchFiles();
-    } catch { /* ignore */ }
-  };
-
-  const handleArxivSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const q = arxivQuery.trim();
-    if (!q) return;
-    setArxivLoading(true);
-    setArxivError('');
-    setArxivResults([]);
-    try {
-      const { data } = await client.get<{ results: ArxivResult[] }>(
-        `/projects/${id}/literature/arxiv-search/`,
-        { params: { q, max_results: 10 } },
-      );
-      setArxivResults(data.results);
-      if (data.results.length === 0) {
-        setArxivError('По вашему запросу ничего не найдено');
-      }
-    } catch {
-      setArxivError('Ошибка при поиске на arXiv');
-    } finally {
-      setArxivLoading(false);
-    }
-  };
-
-  const handleSaveArxivResult = async (result: ArxivResult) => {
-    setArxivSaving((prev) => new Set(prev).add(result.arxiv_id));
-    try {
-      const payload = {
-        title: result.title,
-        authors: result.authors,
-        year: result.year,
-        url: result.url,
-        description: result.summary.length > 500
-          ? result.summary.substring(0, 497) + '...'
-          : result.summary,
-        tags: result.categories,
-        source_type: arxivSourceTypes[result.arxiv_id] || 'journal_article',
-      };
-      await client.post(`/projects/${id}/literature/sources/`, payload);
-      showSuccess('Статья сохранена в источники');
-      fetchSources();
-    } catch {
-      showError('Ошибка сохранения статьи');
-    } finally {
-      setArxivSaving((prev) => {
-        const s = new Set(prev);
-        s.delete(result.arxiv_id);
-        return s;
-      });
+      await client.delete(`/tasks/${taskId}/`);
+      showSuccess('Задача удалена');
+      fetchAllTasks();
+      fetchMyTasks();
+    } catch (err) {
+      showError(getErrorMessage(err));
     }
   };
 
@@ -367,6 +215,16 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   if (!isMember && projectCatalog) {
     return (
       <div className="container">
+        <div className={styles.topActions}>
+          <button
+            className={`btn btn-outline ${styles.actionBtn}`}
+            onClick={() => navigate('/projects')}
+            style={{ marginRight: 'auto' }}
+          >
+            ← Назад к проектам
+          </button>
+        </div>
+
         <div className={styles.topGrid}>
           <div className={styles.infoCard}>
             <h1 className={styles.projectTitle}>{projectCatalog.title}</h1>
@@ -408,6 +266,14 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     <div className="container">
       {/* Верхняя панель с кнопками */}
       <div className={styles.topActions}>
+        <button
+          className={`btn btn-outline ${styles.actionBtn}`}
+          onClick={() => navigate('/projects')}
+          style={{ marginRight: 'auto' }}
+        >
+          ← Назад к проектам
+        </button>
+
         {isOwner && (
           <>
             <button
@@ -418,9 +284,9 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
             </button>
             <button
               className={`btn btn-outline ${styles.actionBtn}`}
-              onClick={() => navigate(`/projects/${id}/gost`)}
+              onClick={() => navigate(`/projects/${id}/literature`)}
             >
-              Конструктор ГОСТ
+              Литература проекта
             </button>
             <button
               className={`btn btn-outline ${styles.actionBtn}`}
@@ -499,12 +365,6 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
         >
           Мои задачи
         </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'literature' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('literature')}
-        >
-          Литература проекта
-        </button>
       </div>
 
       {/* Вкладка: Все задачи */}
@@ -527,30 +387,67 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
                     <option value="high">Высокий</option>
                   </select>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowTaskForm(!showTaskForm)}>
-                  {showTaskForm ? 'Отмена' : '+ Создать задачу'}
+                <button className="btn btn-primary" style={{ borderRadius: 12 }} onClick={openTaskModal}>
+                  + Создать задачу
                 </button>
               </div>
 
               {showTaskForm && (
-                <form className={styles.taskForm} onSubmit={handleCreateTask}>
-                  <input placeholder="Название" value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} required />
-                  <textarea placeholder="Описание" value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} />
-                  <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>
-                    <option value="low">Низкий</option>
-                    <option value="medium">Средний</option>
-                    <option value="high">Высокий</option>
-                  </select>
-                  <input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })} />
-                  <select value={taskForm.assignee_id} onChange={(e) => setTaskForm({ ...taskForm, assignee_id: e.target.value })}>
-                    <option value="">Назначить исполнителя</option>
-                    {project.memberships.map((m) => (
-                      <option key={m.user.id} value={m.user.id}>{m.user.full_name}</option>
-                    ))}
-                  </select>
-                  {taskError && <p className="error-msg">{taskError}</p>}
-                  <button type="submit" className="btn btn-primary">Создать</button>
-                </form>
+                <div
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1000,
+                    background: 'rgba(15, 31, 36, 0.45)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 20,
+                  }}
+                  onClick={closeTaskModal}
+                >
+                  <form
+                    className={styles.taskForm}
+                    onSubmit={handleCreateTask}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: 'min(560px, 100%)',
+                      background: '#ffffff',
+                      borderRadius: 24,
+                      padding: 24,
+                      boxShadow: '0 24px 80px rgba(15, 31, 36, 0.24)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                      <h3 style={{ margin: 0 }}>Новая задача</h3>
+                    </div>
+
+                    <input placeholder="Название" value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} required />
+                    <textarea placeholder="Описание" value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} />
+                    <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>
+                      <option value="low">Низкий</option>
+                      <option value="medium">Средний</option>
+                      <option value="high">Высокий</option>
+                    </select>
+                    <input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })} />
+                    <select value={taskForm.assignee_id} onChange={(e) => setTaskForm({ ...taskForm, assignee_id: e.target.value })}>
+                      <option value="">Назначить исполнителя</option>
+                      {project.memberships.map((m) => (
+                        <option key={m.user.id} value={m.user.id}>{m.user.full_name}</option>
+                      ))}
+                    </select>
+                    {taskError && <p className="error-msg">{taskError}</p>}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+                      <button type="button" className="btn btn-outline" onClick={closeTaskModal}>
+                        Отмена
+                      </button>
+                      <button type="submit" className="btn btn-primary">
+                        Создать
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )}
 
               {isTabLoading('allTasks') ? (
@@ -564,21 +461,46 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
                       <th>Приоритет</th>
                       <th>Исполнитель</th>
                       <th>Дедлайн</th>
+                      <th style={{ width: 50 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {allTasks.map((t) => (
-                      <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/tasks/${t.id}`)}>
-                        <td>{t.title}</td>
-                        <td><StatusBadge status={t.status} /></td>
-                        <td>{PRIORITY_LABELS[t.priority] || t.priority}</td>
-                        <td>{t.assignee?.full_name || '—'}</td>
-                        <td>{t.deadline || '—'}</td>
+                      <tr key={t.id}>
+                        <td style={{ cursor: 'pointer' }} onClick={() => navigate(`/tasks/${t.id}`)}>
+                          {t.title}
+                        </td>
+                        <td onClick={() => navigate(`/tasks/${t.id}`)}>
+                          <StatusBadge status={t.status} />
+                        </td>
+                        <td onClick={() => navigate(`/tasks/${t.id}`)}>
+                          {PRIORITY_LABELS[t.priority] || t.priority}
+                        </td>
+                        <td onClick={() => navigate(`/tasks/${t.id}`)}>
+                          {t.assignee?.full_name || '—'}
+                        </td>
+                        <td onClick={() => navigate(`/tasks/${t.id}`)}>
+                          {t.deadline || '—'}
+                        </td>
+                        <td>
+                          <button
+                            className={styles.deleteTaskBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Удалить задачу "${t.title}"?`)) {
+                                handleDeleteTask(t.id);
+                              }
+                            }}
+                            title="Удалить"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {allTasks.length === 0 && (
                       <tr>
-                        <td colSpan={5} style={{ textAlign: 'center' }}>Нет задач</td>
+                        <td colSpan={6} style={{ textAlign: 'center' }}>Нет задач</td>
                       </tr>
                     )}
                   </tbody>
@@ -643,263 +565,84 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
         </div>
       )}
 
-      {/* Вкладка: Литература */}
-      {activeTab === 'literature' && (
-        <div className={styles.tabContent}>
-          <div className={styles.tabHeader}>
-            <h3>Литературные источники</h3>
-            <button className="btn btn-primary" onClick={() => setShowSourceForm(!showSourceForm)}>
-              {showSourceForm ? 'Отмена' : '+ Добавить источник'}
-            </button>
-          </div>
+      {showTaskForm && (
+        <div
+          role="presentation"
+          onMouseDown={closeTaskModal}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(23, 50, 59, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-task-title"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 620,
+              background: '#ffffff',
+              borderRadius: 20,
+              padding: 24,
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.18)',
+            }}
+          >
+            <h3 id="create-task-title" style={{ margin: '0 0 20px 0', color: '#17323b' }}>
+              Создание задачи
+            </h3>
 
-          {showSourceForm && (
-            <form className={styles.sourceForm} onSubmit={handleCreateSource}>
-              <select value={sourceForm.source_type} onChange={(e) => setSourceForm({ ...sourceForm, source_type: e.target.value })}>
-                <option value="">Тип источника (для ГОСТ)</option>
-                <option value="journal_article">Статья в журнале</option>
-                <option value="book">Книга</option>
-                <option value="collection_article">Статья в сборнике</option>
-                <option value="electronic_resource">Электронный ресурс</option>
-                <option value="newspaper_article">Статья в газете</option>
-                <option value="dissertation">Диссертация</option>
-              </select>
-              <input placeholder="Название *" value={sourceForm.title} onChange={(e) => setSourceForm({ ...sourceForm, title: e.target.value })} required />
-              <input placeholder="Авторы" value={sourceForm.authors} onChange={(e) => setSourceForm({ ...sourceForm, authors: e.target.value })} />
-              <input type="number" placeholder="Год" value={sourceForm.year} onChange={(e) => setSourceForm({ ...sourceForm, year: e.target.value })} />
-              <input placeholder="Журнал" value={sourceForm.journal} onChange={(e) => setSourceForm({ ...sourceForm, journal: e.target.value })} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
-                <input placeholder="Том" value={sourceForm.volume} onChange={(e) => setSourceForm({ ...sourceForm, volume: e.target.value })} />
-                <input placeholder="Выпуск / №" value={sourceForm.issue} onChange={(e) => setSourceForm({ ...sourceForm, issue: e.target.value })} />
-                <input placeholder="Страницы (41–52)" value={sourceForm.pages} onChange={(e) => setSourceForm({ ...sourceForm, pages: e.target.value })} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
-                <input placeholder="Издательство" value={sourceForm.publisher} onChange={(e) => setSourceForm({ ...sourceForm, publisher: e.target.value })} />
-                <input placeholder="Город издания" value={sourceForm.city} onChange={(e) => setSourceForm({ ...sourceForm, city: e.target.value })} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, gridColumn: '1 / -1' }}>
-                <input placeholder="Кол-во страниц" value={sourceForm.total_pages} onChange={(e) => setSourceForm({ ...sourceForm, total_pages: e.target.value })} />
-                <input placeholder="DOI" value={sourceForm.doi} onChange={(e) => setSourceForm({ ...sourceForm, doi: e.target.value })} />
-              </div>
-              <input style={{ gridColumn: '1 / -1' }} placeholder="URL" value={sourceForm.url} onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })} />
-              <input style={{ gridColumn: '1 / -1' }} placeholder="Дата обращения (для эл. ресурсов)" value={sourceForm.access_date} onChange={(e) => setSourceForm({ ...sourceForm, access_date: e.target.value })} />
-              <textarea style={{ gridColumn: '1 / -1' }} placeholder="Описание" value={sourceForm.description} onChange={(e) => setSourceForm({ ...sourceForm, description: e.target.value })} />
-              <input style={{ gridColumn: '1 / -1' }} placeholder="Теги (через запятую)" value={sourceForm.tags} onChange={(e) => setSourceForm({ ...sourceForm, tags: e.target.value })} />
-              {sourceError && <p className="error-msg">{sourceError}</p>}
-              <button type="submit" className="btn btn-primary">Добавить</button>
-            </form>
-          )}
-
-          {isTabLoading('literature') ? (
-            <SkeletonTable rows={4} cols={5} />
-          ) : (
-            <table className={styles.sourceTable}>
-              <thead>
-                <tr>
-                  <th>Название</th>
-                  <th>Авторы</th>
-                  <th>Год</th>
-                  <th>Теги</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {sources.map((s) => (
-                  <>
-                    <tr key={s.id}>
-                      <td>{s.url ? <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a> : s.title}</td>
-                      <td>{s.authors || '—'}</td>
-                      <td>{s.year || '—'}</td>
-                      <td>{s.tags?.join(', ') || '—'}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {!s.gost_string && !gostEditing.has(s.id) && (
-                          <button className="btn btn-outline" style={{ fontSize: 11, padding: '2px 8px', marginRight: 4 }} onClick={() => handleGostEdit(s)}>ГОСТ</button>
-                        )}
-                        <button className={styles.removeBtn} onClick={() => handleDeleteSource(s.id)}>×</button>
-                      </td>
-                    </tr>
-                    {(s.gost_string || gostEditing.has(s.id)) && (
-                      <tr key={`${s.id}-gost`}>
-                        <td colSpan={5} className={styles.gostRow}>
-                          {gostEditing.has(s.id) ? (
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                              <textarea
-                                value={gostDraft[s.id] ?? ''}
-                                onChange={(e) => setGostDraft((prev) => ({ ...prev, [s.id]: e.target.value }))}
-                                style={{ flex: 1, fontSize: 13, padding: '6px 10px', borderRadius: 8, border: '1px solid #b2d4cc', resize: 'vertical', minHeight: 60, fontStyle: 'normal' }}
-                              />
-                              <button className="btn btn-primary" style={{ fontSize: 12, padding: '4px 12px', whiteSpace: 'nowrap' }} onClick={() => handleGostSave(s.id)}>Сохранить</button>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: '4px 12px', whiteSpace: 'nowrap' }} onClick={() => handleGostCancel(s.id)}>Отмена</button>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                              <span><span className={styles.gostLabel}>ГОСТ:</span> {s.gost_string}</span>
-                              <button className="btn btn-outline" style={{ fontSize: 12, padding: '2px 10px', whiteSpace: 'nowrap', flexShrink: 0 }} onClick={() => handleGostEdit(s)}>✎ Изменить</button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))}
-                {sources.length === 0 && (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center' }}>Нет источников</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-
-          {/* Поиск на arXiv */}
-          <div className={styles.fileSection}>
-            <h3>Поиск статей на arXiv</h3>
-            <form onSubmit={handleArxivSearch} className={styles.uploadForm}>
+            <form className={styles.taskForm} onSubmit={handleCreateTask} style={{ marginBottom: 0 }}>
               <input
-                type="text"
-                placeholder="Ключевые слова (например, machine learning)"
-                value={arxivQuery}
-                onChange={(e) => setArxivQuery(e.target.value)}
-                style={{ flex: 3 }}
+                style={{ gridColumn: '1 / -1' }}
+                placeholder="Название задачи *"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                required
               />
-              <button type="submit" className="btn btn-primary" disabled={arxivLoading || !arxivQuery.trim()}>
-                {arxivLoading ? 'Поиск...' : 'Найти на arXiv'}
-              </button>
-              {projectFull?.area && !arxivQuery && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setArxivQuery(projectFull.area)}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  Область проекта
+
+              <textarea
+                placeholder="Описание"
+                value={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+              />
+
+              <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>
+                <option value="low">Низкий</option>
+                <option value="medium">Средний</option>
+                <option value="high">Высокий</option>
+              </select>
+
+              <input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })} />
+
+              <select value={taskForm.assignee_id} onChange={(e) => setTaskForm({ ...taskForm, assignee_id: e.target.value })}>
+                <option value="">Назначить исполнителя</option>
+                {project.memberships.map((m) => (
+                  <option key={m.user.id} value={m.user.id}>{m.user.full_name}</option>
+                ))}
+              </select>
+
+              {taskError && <p className="error-msg" style={{ gridColumn: '1 / -1' }}>{taskError}</p>}
+
+              <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button type="button" className="btn btn-outline" style={{ borderRadius: 12 }} onClick={closeTaskModal}>
+                  Отмена
                 </button>
-              )}
-            </form>
-
-            {arxivError && <p className="error-msg">{arxivError}</p>}
-
-            {arxivResults.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
-                {arxivResults.map((r) => (
-                  <div
-                    key={r.arxiv_id}
-                    style={{
-                      background: '#f8faf8',
-                      borderRadius: 16,
-                      padding: 16,
-                      border: '1px solid #e2efeb',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <a href={r.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600, fontSize: 15, color: '#17323b' }}>
-                          {r.title}
-                        </a>
-                        <div style={{ fontSize: 13, color: '#5f747c', marginTop: 4 }}>
-                          {r.authors} {r.year && `(${r.year})`}
-                        </div>
-                        <div style={{ fontSize: 13, color: '#8aa4ac', marginTop: 8, lineHeight: 1.5 }}>
-                          {r.summary.length > 300 ? r.summary.substring(0, 297) + '...' : r.summary}
-                        </div>
-                        {r.categories.length > 0 && (
-                          <div style={{ marginTop: 8, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                            {r.categories.map((cat) => (
-                              <span
-                                key={cat}
-                                style={{
-                                  background: 'rgba(31, 139, 117, 0.1)',
-                                  color: '#1f8b75',
-                                  padding: '2px 8px',
-                                  borderRadius: 12,
-                                  fontSize: 11,
-                                }}
-                              >
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                        <select
-                          value={arxivSourceTypes[r.arxiv_id] ?? 'journal_article'}
-                          onChange={(e) => setArxivSourceTypes((prev) => ({ ...prev, [r.arxiv_id]: e.target.value }))}
-                          style={{ fontSize: 12, padding: '4px 8px', borderRadius: 8, border: '1px solid #c8ddd8' }}
-                        >
-                          <option value="journal_article">Статья в журнале</option>
-                          <option value="book">Книга</option>
-                          <option value="collection_article">Статья в сборнике</option>
-                          <option value="electronic_resource">Электронный ресурс</option>
-                          <option value="newspaper_article">Статья в газете</option>
-                          <option value="dissertation">Диссертация</option>
-                        </select>
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleSaveArxivResult(r)}
-                          disabled={arxivSaving.has(r.arxiv_id)}
-                          style={{ fontSize: 13, padding: '6px 14px' }}
-                        >
-                          {arxivSaving.has(r.arxiv_id) ? 'Сохранение...' : 'Сохранить'}
-                        </button>
-                        {r.pdf_url && (
-                          <a
-                            href={r.pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-outline"
-                            style={{ fontSize: 13, padding: '6px 14px', textAlign: 'center', textDecoration: 'none' }}
-                          >
-                            PDF
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <button type="submit" className="btn btn-primary" style={{ borderRadius: 12 }}>
+                  Создать
+                </button>
               </div>
-            )}
-          </div>
-
-          <div className={styles.fileSection}>
-            <h3>Файлы и документы</h3>
-            <form onSubmit={handleUploadFile} className={styles.uploadForm}>
-              <input type="file" required />
-              <input placeholder="Описание" value={fileDesc} onChange={(e) => setFileDesc(e.target.value)} />
-              <button type="submit" className="btn btn-primary">Загрузить</button>
             </form>
-            {fileError && <p className="error-msg">{fileError}</p>}
-
-            <table className={styles.fileTable}>
-              <thead>
-                <tr>
-                  <th>Имя файла</th>
-                  <th>Тип</th>
-                  <th>Размер</th>
-                  <th>Описание</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {files.map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.filename}</td>
-                    <td>{f.content_type}</td>
-                    <td>{(f.size / 1024).toFixed(1)} КБ</td>
-                    <td>{f.description || '—'}</td>
-                    <td><button className={styles.removeBtn} onClick={() => handleDeleteFile(f.id)}>×</button></td>
-                  </tr>
-                ))}
-                {files.length === 0 && (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center' }}>Нет файлов</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
+
     </div>
   );
 }

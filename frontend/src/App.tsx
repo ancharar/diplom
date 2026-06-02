@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+} from 'react-router-dom';
 import client from './api/client';
 import ToastContainer from './components/Toast';
 import PrivateRoute from './components/PrivateRoute';
@@ -20,6 +26,8 @@ import ReportsPage from './pages/ReportsPage';
 import AdminPage from './pages/AdminPage';
 import PublicationsPage from './pages/PublicationsPage';
 import GostConstructorPage from './pages/GostConstructorPage';
+import ProjectJoinRequestsPage from './pages/ProjectJoinRequestsPage';
+import LiteratureSection from './components/LiteratureSection';
 
 import type { User } from './types';
 
@@ -45,6 +53,12 @@ function AppLayout({
       </div>
     </div>
   );
+}
+
+function LiteraturePage() {
+  const { id } = useParams<{ id: string }>();
+
+  return <LiteratureSection projectId={id} />;
 }
 
 export default function App() {
@@ -126,6 +140,17 @@ export default function App() {
           />
 
           <Route
+            path="/projects/:id/literature"
+            element={
+              <PrivateRoute>
+                <AppLayout onLogout={handleLogout} user={user}>
+                  <LiteraturePage />
+                </AppLayout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
             path="/projects/:id/reports"
             element={
               <PrivateRoute>
@@ -142,6 +167,17 @@ export default function App() {
               <PrivateRoute>
                 <AppLayout onLogout={handleLogout} user={user}>
                   <GostConstructorPage />
+                </AppLayout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/projects/:id/join-requests"
+            element={
+              <PrivateRoute>
+                <AppLayout onLogout={handleLogout} user={user}>
+                  <ProjectJoinRequestsPage />
                 </AppLayout>
               </PrivateRoute>
             }

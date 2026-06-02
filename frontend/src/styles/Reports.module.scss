@@ -6,13 +6,41 @@
   padding: 32px 24px;
 }
 
+.loader {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.backButton {
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid #238f76;
+  color: #238f76;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(35, 143, 118, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .title {
@@ -32,35 +60,149 @@
 .headerActions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.outlineButton {
+  border-radius: 12px !important;
+  padding: 9px 18px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.primaryButton {
+  background: #238f76 !important;
+  color: #ffffff !important;
+
+  &:hover {
+    background: #1f8b75 !important;
+    transform: translateY(-1px);
+    box-shadow: none !important;
+  }
+}
+
+.outlineButton {
+  background: transparent !important;
+  border: 1px solid #238f76 !important;
+  color: #238f76 !important;
+
+  &:hover {
+    background: rgba(35, 143, 118, 0.08) !important;
+    transform: translateY(-1px);
+    border-color: #238f76 !important;
+  }
 }
 
 // Сводка по отчетам
 .summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 24px;
 }
 
 .summaryCard {
-  padding: 20px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid #e2efeb;
+  transition: all 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 24px rgba(31, 139, 117, 0.08) !important;
+  }
+}
+
+.summarySubmitted {
+  background: #c8f0d2 !important;
+
+  .summaryValue {
+    color: #1f8b75 !important;
+  }
+
+  .summaryLabel {
+    color: #1f8b75 !important;
+    opacity: 0.9;
+  }
+}
+
+.summaryPending {
+  background: #ffe7a0 !important;
+
+  .summaryValue {
+    color: #d97706 !important;
+  }
+
+  .summaryLabel {
+    color: #d97706 !important;
+    opacity: 0.9;
+  }
+}
+
+.summaryOverdue {
+  background: #ffcfd8 !important;
+
+  .summaryValue {
+    color: #dc2626 !important;
+  }
+
+  .summaryLabel {
+    color: #dc2626 !important;
+    opacity: 0.9;
   }
 }
 
 .summaryValue {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  color: #17323b !important;
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  margin-bottom: 8px !important;
 }
 
 .summaryLabel {
-  font-size: 14px;
-  color: #6c757d;
+  color: #5f747c !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+// Вкладки
+.tabsWrapper {
+  margin-top: 24px;
+  border-bottom: 1px solid #e2efeb;
+}
+
+.tabs {
+  min-height: 44px !important;
+
+  :global {
+    .MuiTabs-indicator {
+      background-color: #238f76 !important;
+      height: 2px !important;
+    }
+
+    .MuiTab-root {
+      color: #8aa4ac !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      text-transform: none !important;
+      min-height: 44px !important;
+      padding: 10px 18px !important;
+    }
+
+    .Mui-selected {
+      color: #238f76 !important;
+    }
+  }
+}
+
+.tabPanel {
+  padding: 24px 0;
 }
 
 // Шаблоны отчетов
@@ -72,13 +214,15 @@
 
 .templateCard {
   padding: 20px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2efeb;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.2s ease;
 
   &:hover {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    border-color: rgba(31, 139, 117, 0.25);
+    box-shadow: 0 10px 24px rgba(31, 139, 117, 0.08) !important;
   }
 }
 
@@ -92,15 +236,15 @@
 }
 
 .templateTitle {
-  font-size: 18px;
-  font-weight: 600;
-  color: #17323b;
-  margin: 0 0 4px;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #17323b !important;
+  margin: 0 0 4px !important;
 }
 
 .templateDescription {
-  font-size: 14px;
-  color: #6c757d;
+  font-size: 14px !important;
+  color: #5f747c !important;
 }
 
 .templateMeta {
@@ -108,36 +252,95 @@
   gap: 20px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #e2efeb;
   font-size: 13px;
-  color: #6c757d;
+  color: #5f747c;
+  flex-wrap: wrap;
 }
 
 .templateActions {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-// Таблица отчетов
-.reportTable {
+// Таблицы отчетов и статистики
+.tableContainer {
+  padding: 28px 28px 48px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  overflow: visible !important;
+}
+
+.reportTable,
+.statsTable {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
 
-  th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #e9ecef;
-  }
+  :global {
+    .MuiTableCell-head {
+      padding: 14px 18px !important;
+      background: rgba(31, 139, 117, 0.1) !important;
+      color: #1f8b75 !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      border-bottom: none !important;
+    }
 
-  th {
-    font-weight: 600;
-    color: #17323b;
-    background-color: #f8f9fa;
-  }
+    .MuiTableCell-head:first-of-type {
+      border-radius: 14px 0 0 14px !important;
+    }
 
-  tr:hover td {
-    background-color: #f8f9fa;
+    .MuiTableCell-head:last-of-type {
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableCell-body {
+      padding: 18px 20px !important;
+      background: #f8fbf9 !important;
+      color: #5f747c !important;
+      font-size: 15px !important;
+      font-weight: 400 !important;
+      border-top: 1px solid #eef4f2 !important;
+      border-bottom: 1px solid #eef4f2 !important;
+      border-left: none !important;
+      border-right: none !important;
+      transition: background 0.15s ease !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:first-of-type {
+      border-left: 1px solid #eef4f2 !important;
+      border-radius: 14px 0 0 14px !important;
+      color: #17323b !important;
+      font-weight: 500 !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:last-of-type {
+      border-right: 1px solid #eef4f2 !important;
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableRow-root:hover .MuiTableCell-body {
+      background: #f1f8f5 !important;
+    }
   }
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tableActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 // Статусы отчетов
@@ -150,38 +353,56 @@
 }
 
 .statusPending {
-  background-color: #fff3e0;
-  color: #ff9800;
+  background-color: #fff8e1;
+  color: #f57c00;
 }
 
 .statusSubmitted {
-  background-color: #e3f2fd;
-  color: #2196f3;
+  background-color: #eff6ff;
+  color: #2563eb;
 }
 
 .statusReviewed {
   background-color: #e8f5e9;
-  color: #4caf50;
+  color: #2e7d32;
 }
 
 .statusRejected {
   background-color: #ffebee;
-  color: #f44336;
+  color: #d32f2f;
 }
 
 .overdueRow {
-  background-color: #fff8e1;
+  :global {
+    .MuiTableCell-body {
+      background: #fffdf5 !important;
+    }
+  }
 }
 
 .overdueDate {
-  color: #f44336;
-  font-weight: 500;
+  color: #d32f2f !important;
+  font-weight: 500 !important;
 }
 
 // Статистика
 .statsPaper {
   padding: 24px;
-  border-radius: 16px;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2efeb;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.statsTitle {
+  color: #17323b !important;
+  font-weight: 600 !important;
+}
+
+.statsSubtitle {
+  margin-top: 24px !important;
+  color: #17323b !important;
+  font-weight: 600 !important;
 }
 
 .statsProgress {
@@ -190,17 +411,17 @@
 
 .progressBar {
   height: 8px;
-  background-color: #e9ecef;
-  border-radius: 4px;
+  background-color: rgba(31, 139, 117, 0.1);
+  border-radius: 999px;
   overflow: hidden;
   margin-bottom: 8px;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #1a6b58, #238f76);
-  border-radius: 4px;
-  transition: width 0.3s;
+  background: #238f76;
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
 // Карточка отчета (ReportCard)
@@ -405,6 +626,22 @@
   }
 }
 
+.fileUploadBlock {
+  margin-top: 16px;
+}
+
+.fileUploadLabel {
+  margin-bottom: 8px !important;
+  color: #17323b !important;
+  font-weight: 500 !important;
+}
+
+.fileUploadHint {
+  display: block;
+  margin-top: 4px !important;
+  color: #5f747c !important;
+}
+
 .questionsList {
   margin-top: 16px;
   border: 1px solid #dee2e6;
@@ -447,6 +684,52 @@
   }
 }
 
+// Переопределение MUI для страницы отчетов
+.container {
+  :global {
+    .MuiPaper-root {
+      border-radius: 16px;
+    }
+
+    .MuiChip-root {
+      border-radius: 999px !important;
+      font-weight: 500 !important;
+    }
+
+    .MuiIconButton-root {
+      color: #5f747c;
+
+      &:hover {
+        background: rgba(31, 139, 117, 0.08);
+        color: #1f8b75;
+      }
+    }
+
+    .MuiButton-root {
+      border-radius: 12px;
+      text-transform: none;
+      font-weight: 500;
+      box-shadow: none;
+    }
+
+    .MuiDialog-paper {
+      border-radius: 20px !important;
+    }
+
+    .MuiOutlinedInput-root {
+      border-radius: 12px !important;
+    }
+
+    .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #238f76 !important;
+    }
+
+    .MuiInputLabel-root.Mui-focused {
+      color: #238f76 !important;
+    }
+  }
+}
+
 // Адаптивность
 @media (max-width: 768px) {
   .container {
@@ -459,7 +742,7 @@
 
   .header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
   .headerActions {
@@ -471,8 +754,17 @@
     width: 100%;
   }
 
+  .summaryGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .templateHeader {
     flex-direction: column;
+  }
+
+  .templateActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .templateMeta {
@@ -480,13 +772,14 @@
     gap: 8px;
   }
 
-  .reportTable {
+  .reportTable,
+  .statsTable {
     display: block;
     overflow-x: auto;
   }
 
-  .summaryGrid {
-    grid-template-columns: 1fr 1fr;
+  .backButton {
+    width: 100%;
   }
 }
 
