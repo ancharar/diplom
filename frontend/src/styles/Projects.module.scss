@@ -1,15 +1,15 @@
 .fullPageContainer {
   height: calc(100vh - 88px);
   overflow: hidden;
-  padding: 18px 22px 20px;
+  padding: 20px 24px;
   box-sizing: border-box;
 }
 
 .dashboardGrid {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(560px, 0.95fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(520px, 0.95fr);
+  gap: 24px;
   min-height: 0;
   overflow: hidden;
 }
@@ -18,16 +18,16 @@
   height: 100%;
   display: grid;
   grid-template-rows: minmax(0, 1.15fr) minmax(230px, 0.85fr);
-  gap: 22px;
+  gap: 24px;
   min-height: 0;
   overflow: hidden;
 }
 
 .dashboardBlock {
   background: #ffffff;
-  border-radius: 28px;
-  padding: 22px;
-  box-shadow: 0 14px 40px rgba(31, 139, 117, 0.06);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -37,9 +37,9 @@
   h2 {
     margin: 0;
     color: #17323b;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
     flex-shrink: 0;
   }
 }
@@ -60,15 +60,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
   flex-shrink: 0;
 }
 
 .tabs {
   display: flex;
-  gap: 12px;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #e2efeb;
   flex-shrink: 0;
 }
@@ -77,10 +77,10 @@
   border: none;
   background: transparent;
   color: #8aa4ac;
-  padding: 6px 14px;
+  padding: 8px 14px;
   border-radius: 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -106,13 +106,17 @@
   }
 
   &::-webkit-scrollbar-track {
-    background: #e2efeb;
+    background: #eef4f2;
     border-radius: 999px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #1f8b75;
+    background: #c9ddd7;
     border-radius: 999px;
+
+    &:hover {
+      background: #1f8b75;
+    }
   }
 }
 
@@ -128,13 +132,16 @@
   padding: 16px;
   border-radius: 18px;
   cursor: pointer;
-  border: 1px solid rgba(31, 139, 117, 0.05);
+  background: #f8faf8;
+  border: 1px solid #e2efeb;
   transition: all 0.2s ease;
   box-sizing: border-box;
 
   &:hover {
+    background: #ffffff;
+    border-color: rgba(31, 139, 117, 0.25);
     transform: translateY(-2px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 20px rgba(31, 139, 117, 0.08);
   }
 }
 
@@ -150,7 +157,7 @@
   margin: 0;
   color: #17323b;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.3;
 }
 
@@ -159,23 +166,23 @@
   padding: 4px 9px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .statusInProgress {
-  background: rgba(31, 139, 117, 0.12);
+  background: rgba(31, 139, 117, 0.1);
   color: #1f8b75;
 }
 
 .statusCompleted {
-  background: rgba(100, 116, 139, 0.12);
-  color: #64748b;
+  background: #f3f4f6;
+  color: #6b7280;
 }
 
 .statusPlanning {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  background: #fff8e1;
+  color: #f57c00;
 }
 
 .projectDates {
@@ -197,24 +204,24 @@
 .areaBadge {
   display: inline-block;
   padding: 5px 12px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(31, 139, 117, 0.08);
   color: #1f8b75;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .projectMemberCount {
   color: #5f747c;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .projectActions {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-top: 1px solid #e2efeb;
 }
 
 .joinButton,
@@ -224,14 +231,14 @@
   padding: 8px 12px;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .joinButton {
   color: #1f8b75;
-  background: rgba(31, 139, 117, 0.13);
+  background: rgba(31, 139, 117, 0.1);
 
   &:hover {
     color: #ffffff;
@@ -241,10 +248,10 @@
 
 .cancelButton {
   color: #b45a5a;
-  background: rgba(180, 90, 90, 0.12);
+  background: rgba(180, 90, 90, 0.1);
 
   &:hover {
-    background: rgba(180, 90, 90, 0.2);
+    background: rgba(180, 90, 90, 0.18);
   }
 }
 
@@ -256,7 +263,7 @@
   color: #1f8b75;
   background: rgba(31, 139, 117, 0.1);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .emptyState {
@@ -284,7 +291,7 @@
     min-width: 110px;
     color: #17323b;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
     text-align: center;
     text-transform: capitalize;
   }
@@ -296,7 +303,7 @@
     border-radius: 10px;
     padding: 5px 10px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
 
@@ -320,23 +327,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7b8c92;
+  color: #8aa4ac;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .calendarDay {
   min-height: 0;
   padding: 7px;
-  background: #f9fdfb;
+  background: #f8faf8;
   border: 1px solid #e2efeb;
-  border-radius: 11px;
+  border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: #1f8b75;
-    box-shadow: 0 4px 10px rgba(31, 139, 117, 0.08);
+    background: #ffffff;
+    border-color: rgba(31, 139, 117, 0.35);
+    box-shadow: 0 4px 12px rgba(31, 139, 117, 0.08);
   }
 }
 
@@ -354,7 +362,7 @@
   display: block;
   color: #17323b;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
@@ -368,10 +376,10 @@
 .taskDot {
   width: 100%;
   border: none;
-  background: rgba(31, 139, 117, 0.12);
+  background: rgba(31, 139, 117, 0.1);
   color: #1f8b75;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 4px;
   border-radius: 6px;
   cursor: pointer;
@@ -381,14 +389,14 @@
   text-align: left;
 
   &:hover {
-    background: rgba(31, 139, 117, 0.22);
+    background: rgba(31, 139, 117, 0.18);
   }
 }
 
 .moreTasks {
   color: #6d7d83;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 600;
   padding-left: 2px;
 }
 
@@ -414,7 +422,7 @@
       background: rgba(255, 255, 255, 0.96) !important;
       border-radius: 12px !important;
       border: none !important;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
     }
   }
 }
@@ -436,7 +444,7 @@
   display: block;
   color: #1f8b75;
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -445,7 +453,7 @@
   margin-top: 6px;
   color: #5f747c;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .noStats {
@@ -465,7 +473,8 @@
 
 .statCard {
   padding: 14px 10px;
-  background: linear-gradient(135deg, #f8faf8 0%, #f0f6f3 100%);
+  background: #f8faf8;
+  border: 1px solid #e2efeb;
   border-radius: 16px;
   text-align: center;
 
@@ -473,7 +482,7 @@
     display: block;
     color: #1f8b75;
     font-size: 24px;
-    font-weight: 900;
+    font-weight: 800;
   }
 
   p {
@@ -481,6 +490,105 @@
     color: #5f747c;
     font-size: 11px;
   }
+}
+
+// Прогресс проекта
+.progressWrapper {
+  margin: 12px 0;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #5f747c;
+  margin-bottom: 4px;
+}
+
+.progressPercent {
+  color: #1f8b75;
+  font-weight: 700;
+}
+
+.progressBar {
+  height: 6px;
+  background: rgba(31, 139, 117, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #1f8b75, #2aad8f);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+// Участники проекта
+.projectMembers {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(31, 139, 117, 0.08);
+}
+
+.membersHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #8aa4ac;
+  margin-bottom: 8px;
+}
+
+.membersIcon {
+  font-size: 12px;
+}
+
+.membersList {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.memberAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(31, 139, 117, 0.12);
+  color: #1f8b75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #1f8b75;
+    color: white;
+    transform: scale(1.05);
+  }
+}
+
+.memberMore {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(31, 139, 117, 0.08);
+  color: #8aa4ac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.projectMembersCatalog {
+  margin: 12px 0 8px;
 }
 
 @media (max-width: 1280px) {
@@ -494,7 +602,7 @@
   }
 
   .dashboardBlock {
-    padding: 18px;
+    padding: 20px;
   }
 
   .calendarDay {

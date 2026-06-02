@@ -31,6 +31,20 @@ export default function Header({ user }: HeaderProps) {
       };
     }
 
+    if (location.pathname.includes('/literature')) {
+      return {
+        title: 'Литература',
+        description: 'Управление литературными источниками проекта',
+      };
+    }
+
+    if (location.pathname.includes('/reports')) {
+      return {
+        title: 'Отчеты',
+        description: 'Управление отчетностью по проекту',
+      };
+    }
+
     if (location.pathname.startsWith('/projects/')) {
       return {
         title: 'Детали проекта',

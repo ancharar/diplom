@@ -29,9 +29,10 @@ export default function PublicationsPage() {
   const fetchPublications = async () => {
     try {
       const { data } = await client.get<Publication[]>('/publications/');
-      setPublications(data);
+      setPublications(data || []); 
     } catch {
       setError('Ошибка загрузки публикаций');
+      setPublications([]); 
     } finally {
       setLoading(false);
     }
@@ -96,14 +97,14 @@ export default function PublicationsPage() {
     setEditingId(pub.id);
     setEditForm({
       title: pub.title,
-      authors: pub.authors.join(', '),
+      authors: pub.authors?.join(', ') || '',
       year: pub.year?.toString() || '',
-      journal: pub.journal,
-      volume: pub.volume,
-      issue: pub.issue,
-      pages: pub.pages,
-      url: pub.url,
-      doi: pub.doi,
+      journal: pub.journal || '',
+      volume: pub.volume || '',
+      issue: pub.issue || '',
+      pages: pub.pages || '',
+      url: pub.url || '',
+      doi: pub.doi || '',
     });
   };
 
@@ -127,6 +128,23 @@ export default function PublicationsPage() {
       setError('Ошибка обновления');
     }
   };
+
+  // ✅ безопасная проверка длины
+  const hasPublications = publications && publications.length > 0;
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>Мои публикации</h1>
+            <p className={styles.subtitle}>Управление списком научных публикаций</p>
+          </div>
+        </div>
+        <p>Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -177,7 +195,7 @@ export default function PublicationsPage() {
                 <span>{metadata.title}</span>
               </div>
             )}
-            {metadata.authors.length > 0 && (
+            {metadata.authors && metadata.authors.length > 0 && (
               <div className={styles.metadataField}>
                 <span>Авторы:</span>
                 <span>{metadata.authors.join(', ')}</span>
@@ -214,9 +232,7 @@ export default function PublicationsPage() {
       </div>
 
       {/* Список публикаций */}
-      {loading ? (
-        <p>Загрузка...</p>
-      ) : publications.length === 0 ? (
+      {!hasPublications ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyStateTitle}>Нет публикаций</div>
           <div className={styles.emptyStateText}>
@@ -296,7 +312,7 @@ export default function PublicationsPage() {
                           pub.title || 'Без названия'
                         )}
                       </div>
-                      {pub.authors.length > 0 && (
+                      {pub.authors && pub.authors.length > 0 && (
                         <div className={styles.pubAuthors}>
                           {pub.authors.join(', ')}
                         </div>
@@ -318,11 +334,13 @@ export default function PublicationsPage() {
                     {pub.volume && <span>Т. {pub.volume}</span>}
                     {pub.issue && <span>Вып. {pub.issue}</span>}
                     {pub.pages && <span>С. {pub.pages}</span>}
-                    <span className={`${styles.confidenceBadge} ${
-                      styles[`confidence${pub.extraction_confidence.charAt(0).toUpperCase() + pub.extraction_confidence.slice(1)}`]
-                    }`}>
-                      {CONFIDENCE_LABEL[pub.extraction_confidence]}
-                    </span>
+                    {pub.extraction_confidence && (
+                      <span className={`${styles.confidenceBadge} ${
+                        styles[`confidence${pub.extraction_confidence.charAt(0).toUpperCase() + pub.extraction_confidence.slice(1)}`]
+                      }`}>
+                        {CONFIDENCE_LABEL[pub.extraction_confidence]}
+                      </span>
+                    )}
                   </div>
                   {pub.gost_string && (
                     <div className={styles.pubGost}>{pub.gost_string}</div>

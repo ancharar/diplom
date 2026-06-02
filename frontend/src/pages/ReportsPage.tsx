@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Tabs,
@@ -37,7 +37,6 @@ import {
   Pending as PendingIcon,
   Warning as WarningIcon,
   Download as DownloadIcon,
-  Upload as UploadIcon,
 } from '@mui/icons-material';
 import { reportApi } from '../api/reportsApi';
 import { useToast } from '../contexts/ToastContext';
@@ -52,8 +51,9 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
+
   return (
-    <div role="tabpanel" hidden={value !== index} style={{ padding: 24 }} {...other}>
+    <div role="tabpanel" hidden={value !== index} className={styles.tabPanel} {...other}>
       {value === index && children}
     </div>
   );
@@ -68,6 +68,7 @@ interface TemplateFormData {
 
 export default function ReportsPage() {
   const { id: projectId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 
   const [tabValue, setTabValue] = useState(0);
@@ -86,19 +87,18 @@ export default function ReportsPage() {
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const templateFileRef = useRef<HTMLInputElement>(null);
 
-  // Для загрузки файлов отчетов
-  const [uploadingReportId, setUploadingReportId] = useState<number | null>(null);
-  const reportFileRef = useRef<HTMLInputElement>(null);
-
   const loadData = async () => {
     if (!projectId) return;
+
     setLoading(true);
+
     try {
       const [templatesRes, reportsRes, summaryRes] = await Promise.all([
         reportApi.getTemplates(Number(projectId)),
         reportApi.getReports(Number(projectId)),
         reportApi.getSummary(Number(projectId)),
       ]);
+
       setTemplates(templatesRes.data);
       setReports(reportsRes.data);
       setSummary(summaryRes.data);
@@ -113,8 +113,15 @@ export default function ReportsPage() {
     loadData();
   }, [projectId]);
 
+  const handleBackToProject = () => {
+    if (!projectId) return;
+
+    navigate(`/projects/${projectId}`);
+  };
+
   const handleGenerateReports = async () => {
     if (!projectId) return;
+
     try {
       const response = await reportApi.generateReports(Number(projectId));
       showSuccess(response.data.message);
@@ -126,12 +133,15 @@ export default function ReportsPage() {
 
   const handleSaveTemplate = async () => {
     if (!projectId) return;
+
     try {
       const formData = new FormData();
+
       formData.append('title', templateForm.title);
       formData.append('description', templateForm.description);
       formData.append('frequency', templateForm.frequency);
       formData.append('deadline_days', String(templateForm.deadline_days));
+
       if (templateFile) {
         formData.append('template_file', templateFile);
       }
@@ -142,11 +152,13 @@ export default function ReportsPage() {
           editingTemplate.id,
           formData,
         );
+
         showSuccess('Шаблон обновлен');
       } else {
         await reportApi.createTemplate(Number(projectId), formData);
         showSuccess('Шаблон создан');
       }
+
       setOpenTemplateDialog(false);
       setEditingTemplate(null);
       setTemplateFile(null);
@@ -156,6 +168,7 @@ export default function ReportsPage() {
         frequency: 'weekly',
         deadline_days: 3,
       });
+
       loadData();
     } catch {
       showError('Ошибка сохранения шаблона');
@@ -165,6 +178,7 @@ export default function ReportsPage() {
   const handleDeleteTemplate = async (templateId: number) => {
     if (!confirm('Удалить шаблон? Все связанные отчеты также будут удалены.')) return;
     if (!projectId) return;
+
     try {
       await reportApi.deleteTemplate(Number(projectId), templateId);
       showSuccess('Шаблон удален');
@@ -176,47 +190,26 @@ export default function ReportsPage() {
 
   const handleDownloadTemplate = async (templateId: number, title: string) => {
     if (!projectId) return;
+
     try {
       const response = await reportApi.downloadTemplate(
         Number(projectId),
         templateId,
       );
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
+
       link.href = url;
       link.setAttribute('download', `${title}.docx`);
+
       document.body.appendChild(link);
       link.click();
       link.remove();
+
       window.URL.revokeObjectURL(url);
     } catch {
       showError('Ошибка скачивания шаблона');
-    }
-  };
-
-  const handleUploadReport = (reportId: number) => {
-    setUploadingReportId(reportId);
-    reportFileRef.current?.click();
-  };
-
-  const handleReportFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadingReportId) return;
-
-    if (!file.name.endsWith('.docx')) {
-      showError('Допускаются только файлы .docx');
-      return;
-    }
-
-    try {
-      await reportApi.uploadReport(uploadingReportId, file);
-      showSuccess('Отчет загружен');
-      loadData();
-    } catch {
-      showError('Ошибка загрузки отчета');
-    } finally {
-      setUploadingReportId(null);
-      if (reportFileRef.current) reportFileRef.current.value = '';
     }
   };
 
@@ -225,11 +218,14 @@ export default function ReportsPage() {
       const response = await reportApi.downloadReport(reportId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
+
       link.href = url;
       link.setAttribute('download', `report_${reportId}.docx`);
+
       document.body.appendChild(link);
       link.click();
       link.remove();
+
       window.URL.revokeObjectURL(url);
     } catch {
       showError('Ошибка скачивания отчета');
@@ -240,11 +236,13 @@ export default function ReportsPage() {
     const comment = action === 'rejected'
       ? window.prompt('Укажите причину возврата:') || ''
       : '';
+
     try {
       await reportApi.reviewReport(reportId, {
         status: action,
         review_comment: comment,
       });
+
       showSuccess(action === 'reviewed' ? 'Отчет принят' : 'Отчет отправлен на доработку');
       loadData();
     } catch {
@@ -271,15 +269,17 @@ export default function ReportsPage() {
     if (isOverdue && status === 'pending') {
       return <WarningIcon style={{ color: '#f44336', fontSize: 16 }} />;
     }
+
     if (status === 'submitted' || status === 'reviewed') {
       return <CheckCircleIcon style={{ color: '#4caf50', fontSize: 16 }} />;
     }
+
     return <PendingIcon style={{ color: '#ff9800', fontSize: 16 }} />;
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div className={styles.loader}>
         <CircularProgress />
       </div>
     );
@@ -287,29 +287,27 @@ export default function ReportsPage() {
 
   return (
     <div className={styles.container}>
-      {/* Hidden file input for report uploads */}
-      <input
-        type="file"
-        ref={reportFileRef}
-        style={{ display: 'none' }}
-        accept=".docx"
-        onChange={handleReportFileSelected}
-      />
-
       <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Отчеты</h1>
-          <p className={styles.subtitle}>Управление отчетностью по проекту</p>
-        </div>
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={handleBackToProject}
+        >
+          ← Назад к проекту
+        </button>
+
         <div className={styles.headerActions}>
           <Button
+            className={styles.outlineButton}
             variant="outlined"
             startIcon={<RefreshIcon />}
             onClick={handleGenerateReports}
           >
             Создать отчеты
           </Button>
+
           <Button
+            className={styles.primaryButton}
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setOpenTemplateDialog(true)}
@@ -320,36 +318,55 @@ export default function ReportsPage() {
       </div>
 
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-          <Card>
+        <div className={styles.summaryGrid}>
+          <Card className={styles.summaryCard}>
             <CardContent>
-              <Typography variant="h4">{summary.total_reports}</Typography>
-              <Typography variant="body2" color="textSecondary">Всего отчетов</Typography>
+              <Typography className={styles.summaryValue} variant="h4">
+                {summary.total_reports}
+              </Typography>
+              <Typography className={styles.summaryLabel} variant="body2">
+                Всего отчетов
+              </Typography>
             </CardContent>
           </Card>
-          <Card style={{ backgroundColor: '#e8f5e9' }}>
+
+          <Card className={`${styles.summaryCard} ${styles.summarySubmitted}`}>
             <CardContent>
-              <Typography variant="h4">{summary.submitted_reports}</Typography>
-              <Typography variant="body2" color="textSecondary">Сдано</Typography>
+              <Typography className={styles.summaryValue} variant="h4">
+                {summary.submitted_reports}
+              </Typography>
+              <Typography className={styles.summaryLabel} variant="body2">
+                Сдано
+              </Typography>
             </CardContent>
           </Card>
-          <Card style={{ backgroundColor: '#fff3e0' }}>
+
+          <Card className={`${styles.summaryCard} ${styles.summaryPending}`}>
             <CardContent>
-              <Typography variant="h4">{summary.pending_reports}</Typography>
-              <Typography variant="body2" color="textSecondary">Ожидают</Typography>
+              <Typography className={styles.summaryValue} variant="h4">
+                {summary.pending_reports}
+              </Typography>
+              <Typography className={styles.summaryLabel} variant="body2">
+                Ожидают
+              </Typography>
             </CardContent>
           </Card>
-          <Card style={{ backgroundColor: '#ffebee' }}>
+
+          <Card className={`${styles.summaryCard} ${styles.summaryOverdue}`}>
             <CardContent>
-              <Typography variant="h4">{summary.overdue_reports}</Typography>
-              <Typography variant="body2" color="textSecondary">Просрочено</Typography>
+              <Typography className={styles.summaryValue} variant="h4">
+                {summary.overdue_reports}
+              </Typography>
+              <Typography className={styles.summaryLabel} variant="body2">
+                Просрочено
+              </Typography>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <div style={{ borderBottom: '1px solid #e0e0e0', marginTop: 24 }}>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
+      <div className={styles.tabsWrapper}>
+        <Tabs className={styles.tabs} value={tabValue} onChange={(_, v) => setTabValue(v)}>
           <Tab label="Шаблоны отчетов" />
           <Tab label="Отчеты участников" />
           <Tab label="Статистика" />
@@ -362,15 +379,18 @@ export default function ReportsPage() {
             <Alert severity="info">Нет созданных шаблонов. Создайте первый шаблон отчета.</Alert>
           ) : (
             templates.map((template) => (
-              <Paper key={template.id} className={styles.templateCard}>
+              <Paper key={template.id} className={styles.templateCard} elevation={0}>
                 <div className={styles.templateHeader}>
                   <div>
-                    <Typography variant="h6">{template.title}</Typography>
-                    <Typography variant="body2" color="textSecondary">
+                    <Typography className={styles.templateTitle} variant="h6">
+                      {template.title}
+                    </Typography>
+                    <Typography className={styles.templateDescription} variant="body2">
                       {template.description || 'Нет описания'}
                     </Typography>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+
+                  <div className={styles.templateActions}>
                     <Chip
                       label={
                         template.frequency === 'weekly' ? 'Еженедельный'
@@ -379,6 +399,7 @@ export default function ReportsPage() {
                       }
                       size="small"
                     />
+
                     {template.has_template_file && (
                       <IconButton
                         size="small"
@@ -388,6 +409,7 @@ export default function ReportsPage() {
                         <DownloadIcon />
                       </IconButton>
                     )}
+
                     <IconButton
                       size="small"
                       onClick={() => {
@@ -403,14 +425,20 @@ export default function ReportsPage() {
                     >
                       <EditIcon />
                     </IconButton>
-                    <IconButton size="small" color="error" onClick={() => handleDeleteTemplate(template.id)}>
+
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteTemplate(template.id)}
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </div>
                 </div>
+
                 <div className={styles.templateMeta}>
                   <span>Дедлайн: {template.deadline_days} дня на заполнение</span>
-                  <span>{template.has_template_file ? 'Файл шаблона загружен' : 'Файл шаблона не загружен'}</span>
+                  <span>{template.has_template_file ? '📎 Файл шаблона загружен' : 'Файл шаблона не загружен'}</span>
                 </div>
               </Paper>
             ))
@@ -419,8 +447,8 @@ export default function ReportsPage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer className={styles.tableContainer} component={Paper}>
+          <Table className={styles.reportTable}>
             <TableHead>
               <TableRow>
                 <TableCell>Участник</TableCell>
@@ -431,13 +459,17 @@ export default function ReportsPage() {
                 <TableCell>Действия</TableCell>
               </TableRow>
             </TableHead>
+
             <TableBody>
               {reports.map((report) => (
-                <TableRow key={report.id} className={report.is_overdue ? styles.overdueRow : ''}>
+                <TableRow
+                  key={report.id}
+                  className={report.is_overdue ? styles.overdueRow : ''}
+                >
                   <TableCell>{report.user.full_name}</TableCell>
                   <TableCell>{report.period_start} — {report.period_end}</TableCell>
                   <TableCell>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className={styles.statusCell}>
                       {getStatusIcon(report.status, report.is_overdue)}
                       <Chip
                         label={report.status_display}
@@ -463,7 +495,7 @@ export default function ReportsPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    <div className={styles.tableActions}>
                       {report.status === 'submitted' && (
                         <>
                           <Button
@@ -488,9 +520,12 @@ export default function ReportsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+
               {reports.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">Нет отчетов</TableCell>
+                  <TableCell colSpan={6} align="center">
+                    Нет отчетов
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -499,8 +534,11 @@ export default function ReportsPage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <Paper className={styles.statsPaper}>
-          <Typography variant="h6" gutterBottom>Общая статистика</Typography>
+        <Paper className={styles.statsPaper} elevation={0}>
+          <Typography className={styles.statsTitle} variant="h6" gutterBottom>
+            Общая статистика
+          </Typography>
+
           <div className={styles.statsProgress}>
             <div className={styles.progressBar}>
               <div
@@ -508,14 +546,17 @@ export default function ReportsPage() {
                 style={{ width: `${summary?.completion_rate || 0}%` }}
               />
             </div>
-            <Typography variant="body2">Выполнено: {summary?.completion_rate || 0}%</Typography>
+            <Typography variant="body2">
+              Выполнено: {summary?.completion_rate || 0}%
+            </Typography>
           </div>
 
-          <Typography variant="h6" gutterBottom style={{ marginTop: 24 }}>
+          <Typography variant="h6" className={styles.statsSubtitle} gutterBottom>
             Статистика по участникам
           </Typography>
+
           <TableContainer>
-            <Table size="small">
+            <Table className={styles.statsTable} size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Участник</TableCell>
@@ -526,6 +567,7 @@ export default function ReportsPage() {
                   <TableCell align="center">% выполнения</TableCell>
                 </TableRow>
               </TableHead>
+
               <TableBody>
                 {summary?.user_stats.map((stat) => (
                   <TableRow key={stat.user_id}>
@@ -543,7 +585,6 @@ export default function ReportsPage() {
         </Paper>
       </TabPanel>
 
-      {/* Диалог создания/редактирования шаблона */}
       <Dialog
         open={openTemplateDialog}
         onClose={() => setOpenTemplateDialog(false)}
@@ -553,6 +594,7 @@ export default function ReportsPage() {
         <DialogTitle>
           {editingTemplate ? 'Редактировать шаблон' : 'Создать шаблон'}
         </DialogTitle>
+
         <DialogContent>
           <TextField
             label="Название шаблона"
@@ -562,6 +604,7 @@ export default function ReportsPage() {
             onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
             required
           />
+
           <TextField
             label="Описание"
             fullWidth
@@ -570,8 +613,8 @@ export default function ReportsPage() {
             rows={2}
             value={templateForm.description}
             onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
-            InputLabelProps={{ shrink: true }}
           />
+
           <FormControl fullWidth margin="normal">
             <InputLabel>Периодичность</InputLabel>
             <Select
@@ -587,6 +630,7 @@ export default function ReportsPage() {
               <MenuItem value="manual">По требованию</MenuItem>
             </Select>
           </FormControl>
+
           <TextField
             label="Дней на заполнение"
             type="number"
@@ -598,8 +642,9 @@ export default function ReportsPage() {
               deadline_days: Number(e.target.value),
             })}
           />
-          <div style={{ marginTop: 16 }}>
-            <Typography variant="body2" style={{ marginBottom: 8 }}>
+
+          <div className={styles.fileUploadBlock}>
+            <Typography className={styles.fileUploadLabel} variant="body2">
               Файл шаблона (.docx)
             </Typography>
             <input
@@ -609,12 +654,13 @@ export default function ReportsPage() {
               onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
             />
             {editingTemplate?.has_template_file && !templateFile && (
-              <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
+              <Typography variant="body2" className={styles.fileUploadHint}>
                 Файл шаблона уже загружен
               </Typography>
             )}
           </div>
         </DialogContent>
+
         <DialogActions>
           <Button onClick={() => {
             setOpenTemplateDialog(false);

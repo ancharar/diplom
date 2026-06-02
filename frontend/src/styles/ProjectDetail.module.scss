@@ -12,11 +12,12 @@
   justify-content: flex-end;
   gap: 12px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .actionBtn {
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -58,6 +59,7 @@
 
 .infoItem {
   font-size: 14px;
+
   span {
     font-weight: 600;
     color: #1f8b75;
@@ -68,6 +70,7 @@
 .infoItemFull {
   grid-column: 1 / -1;
   font-size: 14px;
+
   span {
     font-weight: 600;
     color: #1f8b75;
@@ -81,13 +84,13 @@
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  
+
   .cardHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
-    
+
     h3 {
       margin: 0;
       font-size: 18px;
@@ -143,7 +146,8 @@
   color: #b45a5a;
   cursor: pointer;
   font-size: 18px;
-  
+  border-radius: 12px;
+
   &:hover {
     color: #d63031;
   }
@@ -153,17 +157,19 @@
   display: flex;
   gap: 8px;
   margin-top: 8px;
-  
-  input, select {
+
+  input,
+  select {
     padding: 8px 12px;
     border: 1px solid #e2efeb;
     border-radius: 10px;
     font-size: 13px;
     flex: 1;
   }
-  
+
   button {
     white-space: nowrap;
+    border-radius: 12px;
   }
 }
 
@@ -186,7 +192,8 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
   transition: all 0.2s ease;
-  
+  border-radius: 12px 12px 0 0;
+
   &:hover {
     color: #1f8b75;
   }
@@ -216,7 +223,7 @@
 .filters {
   display: flex;
   gap: 12px;
-  
+
   select {
     padding: 8px 12px;
     border: 1px solid #e2efeb;
@@ -226,7 +233,8 @@
   }
 }
 
-.taskForm, .sourceForm {
+.taskForm,
+.sourceForm {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
@@ -234,46 +242,131 @@
   padding: 20px;
   background: #f8faf8;
   border-radius: 16px;
-  
-  input, select, textarea {
+
+  input,
+  select,
+  textarea {
     padding: 8px 12px;
     border: 1px solid #e2efeb;
     border-radius: 10px;
     font-size: 13px;
   }
-  
+
   textarea {
     grid-column: 1 / -1;
   }
-  
+
   button {
     grid-column: 1 / -1;
+    border-radius: 12px;
   }
 }
 
-.taskTable, .sourceTable, .fileTable {
+// Минималистичный список задач
+.taskTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f8b75;
+    background: rgba(31, 139, 117, 0.1);
+    border: none;
+
+    &:first-child {
+      border-radius: 12px 0 0 12px;
+    }
+
+    &:last-child {
+      border-radius: 0 12px 12px 0;
+    }
+  }
+
+  td {
+    padding: 14px 16px;
+    background: #f8fbf9;
+    color: #5f747c;
+    font-weight: 400;
+    border-top: 1px solid #f2f5f4;
+    border-bottom: 1px solid #eef4f2;
+    transition: background 0.15s ease;
+  }
+
+  tr td:first-child {
+    border-left: 1px solid #eef4f2;
+    border-radius: 12px 0 0 12px;
+    color: #17323b;
+    font-weight: 500;
+  }
+
+  tr td:last-child {
+    border-right: 1px solid #eef4f2;
+    border-radius: 0 12px 12px 0;
+  }
+
+  tr:hover td {
+    background: #f1f8f5;
+  }
+}
+
+.sourceTable,
+.fileTable {
   width: 100%;
   border-collapse: collapse;
-  
-  th, td {
+
+  th,
+  td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #e2efeb;
   }
-  
+
   th {
     font-weight: 600;
     color: #17323b;
     background: #f8faf8;
   }
-  
+
   td {
     color: #5f747c;
   }
-  
+
   tr:hover td {
     background: #f8faf8;
   }
+}
+
+.taskStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.taskStatusTodo {
+  background: #f4f6f8;
+  color: #6f8a91;
+}
+
+.taskStatusProgress {
+  background: #e7f4ff;
+  color: #2f80ed;
+}
+
+.taskStatusDone {
+  background: #e8f7f1;
+  color: #1f8b75;
+}
+
+.taskStatusOverdue {
+  background: #fff1f0;
+  color: #d63031;
 }
 
 .gostRow {
@@ -296,7 +389,7 @@
   margin-top: 32px;
   padding-top: 24px;
   border-top: 1px solid #e2efeb;
-  
+
   h3 {
     margin: 0 0 16px 0;
     font-size: 18px;
@@ -310,17 +403,21 @@
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
-  
+
   input[type="file"] {
     flex: 2;
     padding: 8px;
   }
-  
+
   input[type="text"] {
     flex: 2;
     padding: 8px 12px;
     border: 1px solid #e2efeb;
     border-radius: 10px;
+  }
+
+  button {
+    border-radius: 12px;
   }
 }
 
@@ -347,7 +444,8 @@
   width: 100%;
   border-collapse: collapse;
 
-  th, td {
+  th,
+  td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #e2efeb;
@@ -412,20 +510,23 @@
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .topActions {
     justify-content: flex-start;
   }
-  
+
   .infoGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .tabs {
     flex-wrap: wrap;
   }
-  
-  .taskTable, .sourceTable, .fileTable, .reportTable {
+
+  .taskTable,
+  .sourceTable,
+  .fileTable,
+  .reportTable {
     display: block;
     overflow-x: auto;
   }
@@ -435,9 +536,27 @@
   .topActions {
     flex-direction: column;
   }
-  
+
   .actionBtn {
     width: 100%;
     text-align: center;
+  }
+}
+
+.deleteTaskBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  color: #b45a5a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(180, 90, 90, 0.1);
+    transform: scale(1.05);
   }
 }

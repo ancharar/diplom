@@ -52,7 +52,6 @@ export default function ProjectsPage() {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-
     return `${year}-${month}-${day}`;
   };
 
@@ -138,10 +137,8 @@ export default function ProjectsPage() {
 
     myTasks.forEach((task) => {
       if (!task.deadline) return;
-
       const date = task.deadline.slice(0, 10);
       const current = map.get(date) || [];
-
       map.set(date, [...current, task]);
     });
 
@@ -157,7 +154,6 @@ export default function ProjectsPage() {
 
     const startOffset =
       firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
     const endOffset =
       lastDay.getDay() === 0 ? 0 : 7 - lastDay.getDay();
 
@@ -167,7 +163,6 @@ export default function ProjectsPage() {
     return Array.from({ length: totalDays }, (_, idx) => {
       const date = new Date(start);
       date.setDate(start.getDate() + idx);
-
       const iso = formatLocalDate(date);
 
       return {
@@ -190,63 +185,42 @@ export default function ProjectsPage() {
 
   const overdueTasksCount = myTasks.filter((task) => {
     if (!task.deadline) return false;
-
     const deadlineDate = new Date(task.deadline);
     const today = new Date();
-
     deadlineDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-
     return !DONE_STATUSES.includes(task.status) && deadlineDate < today;
   }).length;
 
   const pieData = [
-    {
-      name: 'Активные',
-      value: activeTasksCount,
-      color: CHART_COLORS.active,
-    },
-    {
-      name: 'Завершенные',
-      value: completedTasksCount,
-      color: CHART_COLORS.completed,
-    },
-    {
-      name: 'Просроченные',
-      value: overdueTasksCount,
-      color: CHART_COLORS.overdue,
-    },
+    { name: 'Активные', value: activeTasksCount, color: CHART_COLORS.active },
+    { name: 'Завершенные', value: completedTasksCount, color: CHART_COLORS.completed },
+    { name: 'Просроченные', value: overdueTasksCount, color: CHART_COLORS.overdue },
   ].filter((item) => item.value > 0);
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'in_progress':
-        return 'В процессе';
+      case 'in_progress': return 'В процессе';
       case 'completed':
       case 'complete':
       case 'closed':
       case 'done':
         return 'Завершён';
-      case 'planning':
-        return 'Планирование';
-      default:
-        return status;
+      case 'planning': return 'Планирование';
+      default: return status;
     }
   };
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case 'in_progress':
-        return styles.statusInProgress;
+      case 'in_progress': return styles.statusInProgress;
       case 'completed':
       case 'complete':
       case 'closed':
       case 'done':
         return styles.statusCompleted;
-      case 'planning':
-        return styles.statusPlanning;
-      default:
-        return '';
+      case 'planning': return styles.statusPlanning;
+      default: return '';
     }
   };
 
@@ -267,11 +241,8 @@ export default function ProjectsPage() {
             >
               Мои проекты
             </button>
-
             <button
-              className={`${styles.tab} ${
-                tab === 'catalog' ? styles.tabActive : ''
-              }`}
+              className={`${styles.tab} ${tab === 'catalog' ? styles.tabActive : ''}`}
               onClick={() => setTab('catalog')}
             >
               Каталог проектов
@@ -290,24 +261,35 @@ export default function ProjectsPage() {
                   >
                     <div className={styles.projectHeader}>
                       <h3 className={styles.projectTitle}>{p.title}</h3>
-
-                      <span
-                        className={`${styles.projectStatus} ${getStatusClass(
-                          p.status,
-                        )}`}
-                      >
+                      <span className={`${styles.projectStatus} ${getStatusClass(p.status)}`}>
                         {getStatusText(p.status)}
                       </span>
                     </div>
 
                     <div className={styles.projectDates}>
-                      <span>
-                        🗓️ {p.start_date} — {p.end_date}
-                      </span>
+                      <span> {p.start_date} — {p.end_date}</span>
                     </div>
 
                     <div className={styles.projectArea}>
                       <span className={styles.areaBadge}>{p.area}</span>
+                    </div>
+
+                    {/* Участники проекта - Мои проекты */}
+                    <div className={styles.projectMembers}>
+                      <div className={styles.membersHeader}>
+                        <span className={styles.membersIcon}>👥</span>
+                        <span>Участники</span>
+                      </div>
+                      <div className={styles.membersList}>
+                        {p.memberships?.slice(0, 3).map((m) => (
+                          <div key={m.id} className={styles.memberAvatar} title={m.user.full_name}>
+                            {m.user.full_name.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {p.memberships?.length > 3 && (
+                          <div className={styles.memberMore}>+{p.memberships.length - 3}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -334,12 +316,20 @@ export default function ProjectsPage() {
                     >
                       <h3 className={styles.projectTitle}>{p.title}</h3>
                       <span className={styles.projectMemberCount}>
-                        👥 {p.members_count}
+                         {p.members_count}
                       </span>
                     </div>
 
                     <div className={styles.projectArea}>
                       <span className={styles.areaBadge}>{p.area}</span>
+                    </div>
+
+                    {/* Участники проекта - Каталог (только количество, так как нет деталей) */}
+                    <div className={styles.projectMembersCatalog}>
+                      <div className={styles.membersHeader}>
+                        <span className={styles.membersIcon}>👥</span>
+                        <span>Участников: {p.members_count}</span>
+                      </div>
                     </div>
 
                     <div className={styles.projectActions}>
@@ -378,31 +368,18 @@ export default function ProjectsPage() {
           <section className={`${styles.dashboardBlock} ${styles.calendarBlock}`}>
             <div className={styles.calendarHeader}>
               <h2>Календарь задач</h2>
-
               <div className={styles.calendarControls}>
-                <button type="button" onClick={goPrevMonth}>
-                  ‹
-                </button>
-
+                <button type="button" onClick={goPrevMonth}>‹</button>
                 <span>{monthTitle}</span>
-
-                <button type="button" onClick={goNextMonth}>
-                  ›
-                </button>
-
-                <button type="button" onClick={goToday}>
-                  Сегодня
-                </button>
+                <button type="button" onClick={goNextMonth}>›</button>
+                <button type="button" onClick={goToday}>Сегодня</button>
               </div>
             </div>
 
             <div className={styles.calendar}>
               {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
-                <div key={day} className={styles.calendarWeekDay}>
-                  {day}
-                </div>
+                <div key={day} className={styles.calendarWeekDay}>{day}</div>
               ))}
-
               {calendarDays.map((day) => (
                 <div
                   key={day.iso}
@@ -410,10 +387,7 @@ export default function ProjectsPage() {
                     !day.isCurrentMonth ? styles.calendarDayMuted : ''
                   } ${day.isToday ? styles.calendarDayToday : ''}`}
                 >
-                  <span className={styles.calendarDayNumber}>
-                    {day.date.getDate()}
-                  </span>
-
+                  <span className={styles.calendarDayNumber}>{day.date.getDate()}</span>
                   <div className={styles.calendarTasks}>
                     {day.tasks.slice(0, 2).map((task) => (
                       <button
@@ -426,11 +400,8 @@ export default function ProjectsPage() {
                         {task.title}
                       </button>
                     ))}
-
                     {day.tasks.length > 2 && (
-                      <div className={styles.moreTasks}>
-                        +{day.tasks.length - 2}
-                      </div>
+                      <div className={styles.moreTasks}>+{day.tasks.length - 2}</div>
                     )}
                   </div>
                 </div>
@@ -440,7 +411,6 @@ export default function ProjectsPage() {
 
           <section className={`${styles.dashboardBlock} ${styles.statsBlock}`}>
             <h2>Статистика задач</h2>
-
             <div className={styles.statsContainer}>
               <div className={styles.chartWrapper}>
                 {pieData.length > 0 ? (
@@ -459,7 +429,6 @@ export default function ProjectsPage() {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-
                       <Tooltip
                         formatter={(value) => [`${value} задач`, 'Количество']}
                         contentStyle={{
@@ -468,15 +437,12 @@ export default function ProjectsPage() {
                           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                         }}
                       />
-
                       <Legend
                         verticalAlign="bottom"
                         align="center"
                         iconType="circle"
                         formatter={(value) => (
-                          <span style={{ color: '#5f747c', fontSize: 11 }}>
-                            {value}
-                          </span>
+                          <span style={{ color: '#5f747c', fontSize: 11 }}>{value}</span>
                         )}
                       />
                     </PieChart>
@@ -488,23 +454,15 @@ export default function ProjectsPage() {
 
               <div className={styles.statsNumbers}>
                 <div className={styles.statNumberItem}>
-                  <span className={styles.statNumberValue}>
-                    {activeTasksCount}
-                  </span>
+                  <span className={styles.statNumberValue}>{activeTasksCount}</span>
                   <span className={styles.statNumberLabel}>Активные</span>
                 </div>
-
                 <div className={styles.statNumberItem}>
-                  <span className={styles.statNumberValue}>
-                    {completedTasksCount}
-                  </span>
+                  <span className={styles.statNumberValue}>{completedTasksCount}</span>
                   <span className={styles.statNumberLabel}>Завершенные</span>
                 </div>
-
                 <div className={styles.statNumberItem}>
-                  <span className={styles.statNumberValue}>
-                    {overdueTasksCount}
-                  </span>
+                  <span className={styles.statNumberValue}>{overdueTasksCount}</span>
                   <span className={styles.statNumberLabel}>Просроченные</span>
                 </div>
               </div>
