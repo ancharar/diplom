@@ -104,6 +104,29 @@ a {
   color: #fff;
 }
 
+.btn-outline {
+  background: transparent;
+  border: 1px solid #238f76;
+  color: #238f76;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: rgba(35, 143, 118, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
 .form-group {
   margin-bottom: 1rem;
 

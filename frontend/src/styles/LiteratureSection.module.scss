@@ -13,6 +13,12 @@
   align-items: center;
 }
 
+.pageActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .backBtn,
 .actionBtn,
 .submitBtn,
@@ -627,7 +633,7 @@
   .actionBtn,
   .submitBtn,
   .outlineBtn,
-  .backBtn {
+  :global(.btn-outline) {
     width: 100%;
   }
 

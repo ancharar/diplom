@@ -11,6 +11,8 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
   electronic_resource: 'Электронный ресурс',
   newspaper_article: 'Статья в газете',
   dissertation: 'Диссертация',
+  gost_standard: 'ГОСТ, стандарты, приказы',
+  conference_theses: 'Тезисы докладов',
 };
 
 const FIELD_OPTIONS = [

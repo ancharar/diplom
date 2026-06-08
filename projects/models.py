@@ -174,3 +174,42 @@ class JoinRequest(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user} → {self.project} ({self.get_status_display()})'
+
+
+class ProjectInvitation(models.Model):
+    """Приглашение пользователя в проект владельцем."""
+
+    STATUS_CHOICES = [
+        ('pending', 'На рассмотрении'),
+        ('accepted', 'Принято'),
+        ('declined', 'Отклонено'),
+    ]
+
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name='invitations',
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sent_invitations',
+        verbose_name='Отправитель',
+    )
+    receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='received_invitations',
+        verbose_name='Получатель',
+    )
+    project_role = models.CharField('Роль', max_length=50, default='developer')
+    status = models.CharField(
+        'Статус', max_length=20, choices=STATUS_CHOICES, default='pending',
+    )
+    created_at = models.DateTimeField('Дата создания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Приглашение в проект'
+        verbose_name_plural = 'Приглашения в проект'
+        unique_together = [('project', 'receiver')]
+
+    def __str__(self) -> str:
+        return f'{self.sender} → {self.receiver} в {self.project}'

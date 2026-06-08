@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'literature.apps.LiteratureConfig',
     'reports.apps.ReportsConfig',
     'publications.apps.PublicationsConfig',
+    'notifications.apps.NotificationsConfig',
 ]
 
 MIDDLEWARE = [

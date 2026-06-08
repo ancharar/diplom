@@ -250,12 +250,13 @@ export interface ReportSummary {
 
 export interface Notification {
   id: number;
-  user: number;
+  notification_type: 'project_invitation' | 'task_assigned' | 'report_required' | 'report_reminder';
   title: string;
   message: string;
-  type: 'report' | 'task' | 'project' | 'request';
   is_read: boolean;
-  link: string | null;
+  project?: { id: number; title: string } | null;
+  task?: { id: number; title: string } | null;
+  invitation?: { id: number; status: string } | null;
   created_at: string;
 }
 

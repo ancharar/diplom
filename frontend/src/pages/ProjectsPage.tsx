@@ -18,6 +18,8 @@ export default function ProjectsPage() {
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<'my' | 'catalog'>('my');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'leader' | 'member'>('all');
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [catalog, setCatalog] = useState<ProjectCatalog[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
@@ -79,10 +81,11 @@ export default function ProjectsPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [projectsRes, catalogRes, tasksRes] = await Promise.allSettled([
+        const [projectsRes, catalogRes, tasksRes, meRes] = await Promise.allSettled([
           client.get<Project[]>('/projects/'),
           client.get<ProjectCatalog[]>('/projects/catalog/'),
           client.get<Task[]>('/users/me/tasks/'),
+          client.get<{ id: number }>('/users/me/'),
         ]);
 
         if (projectsRes.status === 'fulfilled') {
@@ -95,6 +98,10 @@ export default function ProjectsPage() {
 
         if (tasksRes.status === 'fulfilled') {
           setMyTasks(tasksRes.value.data);
+        }
+
+        if (meRes.status === 'fulfilled') {
+          setCurrentUserId(meRes.value.data.id);
         }
       } finally {
         setLoading(false);
@@ -175,6 +182,12 @@ export default function ProjectsPage() {
     });
   }, [calendarDate, deadlineMap]);
 
+  const filteredProjects = useMemo(() => {
+    if (roleFilter === 'leader') return projects.filter((p) => p.owner?.id === currentUserId);
+    if (roleFilter === 'member') return projects.filter((p) => p.owner?.id !== currentUserId);
+    return projects;
+  }, [projects, roleFilter, currentUserId]);
+
   const activeTasksCount = myTasks.filter(
     (task) => !DONE_STATUSES.includes(task.status),
   ).length;
@@ -249,10 +262,33 @@ export default function ProjectsPage() {
             </button>
           </div>
 
+          {tab === 'my' && (
+            <div className={styles.tabs} style={{ marginBottom: 12 }}>
+              <button
+                className={`${styles.tab} ${roleFilter === 'all' ? styles.tabActive : ''}`}
+                onClick={() => setRoleFilter('all')}
+              >
+                Все
+              </button>
+              <button
+                className={`${styles.tab} ${roleFilter === 'leader' ? styles.tabActive : ''}`}
+                onClick={() => setRoleFilter('leader')}
+              >
+                Руководитель
+              </button>
+              <button
+                className={`${styles.tab} ${roleFilter === 'member' ? styles.tabActive : ''}`}
+                onClick={() => setRoleFilter('member')}
+              >
+                Участник
+              </button>
+            </div>
+          )}
+
           <div className={styles.projectsScrollable}>
             {tab === 'my' && (
               <div className={styles.grid}>
-                {projects.map((p, index) => (
+                {filteredProjects.map((p, index) => (
                   <div
                     key={p.id}
                     className={styles.projectCard}
@@ -294,9 +330,9 @@ export default function ProjectsPage() {
                   </div>
                 ))}
 
-                {projects.length === 0 && (
+                {filteredProjects.length === 0 && (
                   <div className={styles.emptyState}>
-                    <p>У вас пока нет проектов</p>
+                    <p>{projects.length === 0 ? 'У вас пока нет проектов' : 'Нет проектов в этой категории'}</p>
                   </div>
                 )}
               </div>

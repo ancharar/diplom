@@ -12,7 +12,7 @@ interface LiteratureSectionProps {
   projectArea?: string;
 }
 
-type LiteratureFilter = 'all' | 'journal_article' | 'book' | 'electronic_resource' | 'arxiv';
+type LiteratureFilter = 'all' | 'journal_article' | 'book' | 'collection_article' | 'electronic_resource' | 'newspaper_article' | 'dissertation' | 'gost_standard' | 'conference_theses' | 'arxiv';
 
 interface UserData {
   id: number;
@@ -59,6 +59,10 @@ const getSourceTypeLabel = (type?: string) => {
       return 'Газета';
     case 'dissertation':
       return 'Диссертация';
+    case 'gost_standard':
+      return 'ГОСТ/Приказ';
+    case 'conference_theses':
+      return 'Тезисы';
     default:
       return 'Источник';
   }
@@ -353,7 +357,7 @@ export default function LiteratureSection({ projectId, projectArea }: Literature
         <div className={styles.pageActions}>
           <button
             type="button"
-            className={styles.backBtn}
+            className="btn btn-outline"
             onClick={() => {
               if (projectId) {
                 navigate(`/projects/${projectId}`);
@@ -459,10 +463,50 @@ export default function LiteratureSection({ projectId, projectArea }: Literature
 
           <button
             type="button"
+            className={`${styles.filterTab} ${activeFilter === 'collection_article' ? styles.filterTabActive : ''}`}
+            onClick={() => setActiveFilter('collection_article')}
+          >
+            В сборнике
+          </button>
+
+          <button
+            type="button"
             className={`${styles.filterTab} ${activeFilter === 'electronic_resource' ? styles.filterTabActive : ''}`}
             onClick={() => setActiveFilter('electronic_resource')}
           >
             Электронные ресурсы
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.filterTab} ${activeFilter === 'newspaper_article' ? styles.filterTabActive : ''}`}
+            onClick={() => setActiveFilter('newspaper_article')}
+          >
+            Газеты
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.filterTab} ${activeFilter === 'dissertation' ? styles.filterTabActive : ''}`}
+            onClick={() => setActiveFilter('dissertation')}
+          >
+            Диссертации
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.filterTab} ${activeFilter === 'gost_standard' ? styles.filterTabActive : ''}`}
+            onClick={() => setActiveFilter('gost_standard')}
+          >
+            ГОСТы / Приказы
+          </button>
+
+          <button
+            type="button"
+            className={`${styles.filterTab} ${activeFilter === 'conference_theses' ? styles.filterTabActive : ''}`}
+            onClick={() => setActiveFilter('conference_theses')}
+          >
+            Тезисы
           </button>
 
           <button
@@ -488,6 +532,8 @@ export default function LiteratureSection({ projectId, projectArea }: Literature
             <option value="electronic_resource">Электронный ресурс</option>
             <option value="newspaper_article">Статья в газете</option>
             <option value="dissertation">Диссертация</option>
+            <option value="gost_standard">ГОСТ, стандарты, приказы</option>
+            <option value="conference_theses">Тезисы докладов</option>
           </select>
 
           <input

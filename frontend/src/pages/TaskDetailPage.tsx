@@ -1,10 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import client from '../api/client';
 import Loader from '../components/Loader';
 import StatusBadge from '../components/StatusBadge';
 import type { HistoryEntry, Task, User } from '../types';
 import styles from '../styles/TaskDetail.module.scss';
+
+interface Attachment {
+  id: number;
+  attachment_type: 'file' | 'link';
+  file_name: string;
+  file_size: number | null;
+  url: string;
+  description: string;
+  uploaded_by: User;
+  created_at: string;
+}
 
 interface TaskDetailPageProps {
   user: User | null;
@@ -134,6 +145,12 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
     { id: number; full_name: string }[]
   >([]);
 
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachFile, setAttachFile] = useState<File | null>(null);
+  const [attachDesc, setAttachDesc] = useState('');
+  const [attachLoading, setAttachLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [error, setError] = useState('');
@@ -187,6 +204,14 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
     [loadProjectMembers],
   );
 
+  const fetchAttachments = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { data } = await client.get<Attachment[]>(`/tasks/${id}/attachments/`);
+      setAttachments(data);
+    } catch { /* ignore */ }
+  }, [id]);
+
   const loadData = useCallback(async () => {
     if (!id) return;
 
@@ -200,13 +225,14 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
       ]);
 
       await fillTaskData(taskRes.data, historyRes.data);
+      await fetchAttachments();
     } catch (err) {
       console.error('Ошибка загрузки данных задачи:', err);
       setError('Ошибка загрузки задачи');
     } finally {
       setLoading(false);
     }
-  }, [id, fillTaskData]);
+  }, [id, fillTaskData, fetchAttachments]);
 
   const refreshData = useCallback(async () => {
     if (!id) return;
@@ -267,6 +293,46 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
     }
   };
 
+  const handleAttachUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!attachFile || !id) return;
+    setAttachLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', attachFile);
+      fd.append('attachment_type', 'file');
+      if (attachDesc) fd.append('description', attachDesc);
+      await client.post(`/tasks/${id}/attachments/`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setAttachFile(null);
+      setAttachDesc('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      await fetchAttachments();
+    } catch (err) {
+      setError(getErrorMessage(err, 'Ошибка загрузки файла'));
+    } finally {
+      setAttachLoading(false);
+    }
+  };
+
+  const handleAttachDelete = async (attId: number) => {
+    if (!id) return;
+    try {
+      await client.delete(`/tasks/${id}/attachments/${attId}/`);
+      await fetchAttachments();
+    } catch (err) {
+      setError(getErrorMessage(err, 'Ошибка удаления вложения'));
+    }
+  };
+
+  const formatSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} Б`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+  };
+
   if (loading) return <Loader />;
 
   if (!task) {
@@ -274,6 +340,7 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
   }
 
   const canEdit = user?.id === task.created_by.id;
+  const canUpload = canEdit || (task.assignee?.id === user?.id);
 
   const isOverdue =
     task.deadline &&
@@ -285,7 +352,7 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
     <div className={styles.container}>
       <div className={styles.topActions}>
         <button
-          className={styles.backBtn}
+          className="btn btn-outline"
           onClick={() => {
             if (task) {
               const projectId = getProjectId(task);
@@ -486,6 +553,76 @@ export default function TaskDetailPage({ user }: TaskDetailPageProps) {
                 ))}
               </div>
             </div>
+          )}
+        </div>
+
+        <div className={styles.card}>
+          <h3 className={styles.historyTitle}>Вложения</h3>
+
+          {attachments.length === 0 ? (
+            <div className={styles.emptyHistory}>Нет вложений</div>
+          ) : (
+            <div className={styles.attachList}>
+              {attachments.map((a) => (
+                <div key={a.id} className={styles.attachItem}>
+                  <div className={styles.attachInfo}>
+                    <span className={styles.attachName}>{a.file_name || a.url}</span>
+                    {a.file_size && (
+                      <span className={styles.attachSize}>{formatSize(a.file_size)}</span>
+                    )}
+                    {a.description && (
+                      <span className={styles.attachDesc}>{a.description}</span>
+                    )}
+                  </div>
+                  <div className={styles.attachActions}>
+                    {a.attachment_type === 'file' && (
+                      <a
+                        href={`/api/v1/tasks/${id}/attachments/${a.id}/download/`}
+                        className={styles.downloadBtn}
+                        download
+                      >
+                        ↓
+                      </a>
+                    )}
+                    {(canEdit || user?.id === a.uploaded_by?.id) && (
+                      <button
+                        className={styles.deleteAttachBtn}
+                        onClick={() => handleAttachDelete(a.id)}
+                        title="Удалить"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {canUpload && (
+            <form onSubmit={handleAttachUpload} className={styles.attachForm}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className={styles.fileInput}
+                onChange={(e) => setAttachFile(e.target.files?.[0] ?? null)}
+                accept=".pdf,.doc,.docx,.txt,.xlsx,.pptx"
+              />
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="Описание (необязательно)"
+                value={attachDesc}
+                onChange={(e) => setAttachDesc(e.target.value)}
+              />
+              <button
+                type="submit"
+                className={styles.saveBtn}
+                disabled={!attachFile || attachLoading}
+              >
+                {attachLoading ? 'Загрузка...' : 'Загрузить'}
+              </button>
+            </form>
           )}
         </div>
 
