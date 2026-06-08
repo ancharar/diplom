@@ -290,7 +290,7 @@ export default function ReportsPage() {
       <div className={styles.header}>
         <button
           type="button"
-          className={styles.backButton}
+          className="btn btn-outline"
           onClick={handleBackToProject}
         >
           ← Назад к проекту

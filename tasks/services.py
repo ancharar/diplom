@@ -22,6 +22,25 @@ STATUS_LABELS: dict[str, str] = {
 }
 
 
+def _notify_assignee(task: Task, assignee) -> None:
+    """Отправить уведомление исполнителю о назначении задачи."""
+    try:
+        from notifications.services import create_notification
+        create_notification(
+            recipient=assignee,
+            notification_type='task_assigned',
+            title=f'Вам назначена задача «{task.title}»',
+            message=(
+                f'Вы назначены исполнителем задачи «{task.title}» '
+                f'в проекте «{task.project.title}».'
+            ),
+            project=task.project,
+            task=task,
+        )
+    except Exception:
+        pass
+
+
 def create_task(project, user: User, data: dict) -> Task:
     """Создание задачи со статусом 'todo' и запись в историю."""
     task = Task.objects.create(project=project, created_by=user, **data)
@@ -32,11 +51,14 @@ def create_task(project, user: User, data: dict) -> Task:
         old_value='',
         new_value='todo',
     )
+    if task.assignee_id:
+        _notify_assignee(task, task.assignee)
     return task
 
 
 def update_task(task: Task, user: User, data: dict) -> Task:
     """Обновление полей задачи с записью каждого изменения в историю."""
+    old_assignee_id = task.assignee_id
     for field, new_value in data.items():
         old_value = str(getattr(task, field, '') or '')
         new_value_str = str(new_value) if new_value is not None else ''
@@ -50,6 +72,9 @@ def update_task(task: Task, user: User, data: dict) -> Task:
             )
         setattr(task, field, new_value)
     task.save()
+    if task.assignee_id and task.assignee_id != old_assignee_id:
+        task.refresh_from_db(fields=['assignee'])
+        _notify_assignee(task, task.assignee)
     return task
 
 

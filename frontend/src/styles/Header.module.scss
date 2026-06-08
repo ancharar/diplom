@@ -70,6 +70,11 @@
   }
 }
 
+// Обёртка с позиционированием для дропдауна
+.notificationWrapper {
+  position: relative;
+}
+
 // Кнопка уведомлений
 .notificationBtn {
   position: relative;
@@ -198,6 +203,148 @@
   font-size: 12px;
   color: #8aa4ac;
   white-space: nowrap;
+}
+
+// Дропдаун уведомлений
+.dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(15, 31, 36, 0.18);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #e2efeb;
+  flex-shrink: 0;
+}
+
+.dropdownTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #17323b;
+}
+
+.readAllBtn {
+  background: none;
+  border: none;
+  color: #1f8b75;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+
+  &:hover {
+    background: rgba(31, 139, 117, 0.08);
+  }
+}
+
+.emptyNotifications {
+  padding: 40px 20px;
+  text-align: center;
+  color: #8aa4ac;
+  font-size: 14px;
+}
+
+.notificationList {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.notificationItem {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f5f3;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f8faf8;
+  }
+
+  &.unread {
+    background: #f0f9f6;
+    border-left: 3px solid #1f8b75;
+    padding-left: 17px;
+  }
+
+  &.read {
+    opacity: 0.75;
+  }
+}
+
+.notifTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #17323b;
+  margin-bottom: 4px;
+}
+
+.notifMessage {
+  font-size: 12px;
+  color: #5f747c;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.notifDate {
+  font-size: 11px;
+  color: #8aa4ac;
+}
+
+.inviteActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.acceptBtn {
+  flex: 1;
+  padding: 6px 0;
+  background: #1f8b75;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #176f5d;
+  }
+}
+
+.declineBtn {
+  flex: 1;
+  padding: 6px 0;
+  background: #f0f5f3;
+  color: #5f747c;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #e0ece6;
+  }
 }
 
 @media (max-width: 900px) {

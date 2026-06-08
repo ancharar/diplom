@@ -56,7 +56,14 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const [myFilterStatus, setMyFilterStatus] = useState('');
   const [myFilterPriority, setMyFilterPriority] = useState('');
 
-  const [memberForm, setMemberForm] = useState({ user_id: '', project_role: 'developer' });
+  const [memberForm, setMemberForm] = useState({ email: '', project_role: 'developer' });
+  const [inviteSuccess, setInviteSuccess] = useState('');
+
+  interface ProjectStats {
+    total: number; todo: number; in_progress: number; done: number;
+    overdue: number; completion_percent: number;
+  }
+  const [stats, setStats] = useState<ProjectStats | null>(null);
   const [memberError, setMemberError] = useState('');
 
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -101,9 +108,20 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
     } catch { /* ignore */ }
   }, [id, myFilterStatus, myFilterPriority]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const { data } = await client.get(`/projects/${id}/stats/`);
+      setStats(data);
+    } catch { /* ignore */ }
+  }, [id]);
+
   useEffect(() => {
     fetchProject().finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!loading && isMember) fetchStats();
+  }, [loading, isMember, fetchStats]);
 
   useEffect(() => {
     if (loading || !isMember) return;
@@ -138,18 +156,18 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setMemberError('');
+    setInviteSuccess('');
     try {
-      await client.post(`/projects/${id}/members/`, {
-        user_id: Number(memberForm.user_id),
+      await client.post(`/projects/${id}/invite/`, {
+        email: memberForm.email,
         project_role: memberForm.project_role,
       });
-      setMemberForm({ user_id: '', project_role: 'developer' });
-      showSuccess('Участник добавлен');
-      fetchProject();
+      setMemberForm({ email: '', project_role: 'developer' });
+      setInviteSuccess('Приглашение отправлено');
     } catch (err) {
       showError(getErrorMessage(err));
       const resp = (err as { response?: { data?: Record<string, string[]> } }).response?.data;
-      setMemberError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка добавления');
+      setMemberError(resp ? Object.values(resp).flat().join('. ') : 'Ошибка отправки приглашения');
     }
   };
 
@@ -217,7 +235,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       <div className="container">
         <div className={styles.topActions}>
           <button
-            className={`btn btn-outline ${styles.actionBtn}`}
+            className="btn btn-outline"
             onClick={() => navigate('/projects')}
             style={{ marginRight: 'auto' }}
           >
@@ -267,7 +285,7 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
       {/* Верхняя панель с кнопками */}
       <div className={styles.topActions}>
         <button
-          className={`btn btn-outline ${styles.actionBtn}`}
+          className="btn btn-outline"
           onClick={() => navigate('/projects')}
           style={{ marginRight: 'auto' }}
         >
@@ -297,6 +315,36 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
           </>
         )}
       </div>
+
+      {/* Виджет статистики */}
+      {stats && (
+        <div className={styles.statsWidget}>
+          {[
+            { label: 'Всего', value: stats.total },
+            { label: 'К выполнению', value: stats.todo },
+            { label: 'В процессе', value: stats.in_progress },
+            { label: 'Выполнено', value: stats.done },
+            { label: 'Просрочено', value: stats.overdue },
+          ].map(({ label, value }) => (
+            <div key={label} className={styles.statCard}>
+              <span className={styles.statValue}>{value}</span>
+              <span className={styles.statLabel}>{label}</span>
+            </div>
+          ))}
+          <div className={styles.statCard} style={{ gridColumn: '1 / -1' }}>
+            <div className={styles.progressBarLabel}>
+              <span>Выполнение</span>
+              <span>{stats.completion_percent}%</span>
+            </div>
+            <div className={styles.progressBarTrack}>
+              <div
+                className={styles.progressBarFill}
+                style={{ width: `${stats.completion_percent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Верхняя сетка: информация о проекте + участники */}
       <div className={styles.topGrid}>
@@ -331,10 +379,10 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
           {isOwner && (
             <form onSubmit={handleAddMember} className={styles.addMemberForm}>
               <input
-                type="number"
-                placeholder="ID пользователя"
-                value={memberForm.user_id}
-                onChange={(e) => setMemberForm({ ...memberForm, user_id: e.target.value })}
+                type="email"
+                placeholder="Email пользователя"
+                value={memberForm.email}
+                onChange={(e) => setMemberForm({ ...memberForm, email: e.target.value })}
                 required
               />
               <select value={memberForm.project_role} onChange={(e) => setMemberForm({ ...memberForm, project_role: e.target.value })}>
@@ -344,10 +392,11 @@ export default function ProjectDetailPage({ user }: ProjectDetailPageProps) {
                 <option value="designer">Дизайнер</option>
                 <option value="researcher">Исследователь</option>
               </select>
-              <button type="submit" className="btn btn-primary">Добавить</button>
+              <button type="submit" className="btn btn-primary">Пригласить</button>
             </form>
           )}
           {memberError && <p className="error-msg">{memberError}</p>}
+          {inviteSuccess && <p style={{ color: '#1f8b75', fontSize: 13, marginTop: 6 }}>{inviteSuccess}</p>}
         </div>
       </div>
 

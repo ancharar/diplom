@@ -10,7 +10,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from datetime import timedelta
+
+from django.utils import timezone
+
 from projects.models import Project, ProjectMembership
+from notifications.models import Notification
+from notifications.services import create_notification
 from .models import ReportTemplate, Report
 from .serializers import (
     ReportTemplateSerializer, ReportSerializer,
@@ -239,8 +245,47 @@ class MyReportsView(APIView):
     def get(self, request: Request) -> Response:
         project_id = request.query_params.get('project_id')
         reports = get_user_reports(request.user.id, project_id)
+        self._send_deadline_reminders(request.user, reports)
         serializer = ReportSerializer(reports, many=True)
         return Response(serializer.data)
+
+    def _send_deadline_reminders(self, user, reports):
+        """Отправить напоминание если до дедлайна ≤ 2 дня."""
+        now = timezone.now()
+        threshold = now + timedelta(days=2)
+        pending_statuses = ('pending', 'draft')
+
+        for report in reports:
+            if report.status not in pending_statuses:
+                continue
+            if not report.deadline or report.deadline < now:
+                continue
+            if report.deadline > threshold:
+                continue
+
+            project = report.template.project
+            already_sent = Notification.objects.filter(
+                recipient=user,
+                notification_type='report_reminder',
+                project=project,
+                created_at__date=now.date(),
+            ).exists()
+            if already_sent:
+                continue
+
+            days_left = (report.deadline.date() - now.date()).days
+            label = 'завтра' if days_left <= 1 else 'через 2 дня'
+            create_notification(
+                recipient=user,
+                notification_type='report_reminder',
+                title=f'Напоминание: дедлайн отчёта {label}',
+                message=(
+                    f'Срок сдачи отчёта «{report.template.title}» '
+                    f'истекает {report.deadline.strftime("%d.%m.%Y")}. '
+                    f'Не забудьте заполнить и сдать отчёт.'
+                ),
+                project=project,
+            )
 
 
 class GenerateReportsView(APIView):

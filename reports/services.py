@@ -64,11 +64,28 @@ def create_periodic_reports(project_id: int, template_id: int = None):
                 }
             )
             if created:
-                # Автоматически собираем данные о задачах
                 collect_tasks_data(report)
                 created_count += 1
-    
+                _notify_report_created(report, template, start, end)
+
     return created_count
+
+
+def _notify_report_created(report, template, start, end):
+    """Уведомить участника о новом отчёте."""
+    from notifications.services import create_notification
+    deadline_str = report.deadline.strftime('%d.%m.%Y')
+    create_notification(
+        recipient=report.user,
+        notification_type='report_required',
+        title=f'Новый отчёт к заполнению: {template.title}',
+        message=(
+            f'Вам назначен отчёт за период '
+            f'{start.strftime("%d.%m.%Y")} — {end.strftime("%d.%m.%Y")}. '
+            f'Дедлайн: {deadline_str}.'
+        ),
+        project=template.project,
+    )
 
 
 def collect_tasks_data(report: Report):

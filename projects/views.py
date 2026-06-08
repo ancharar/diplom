@@ -1,6 +1,8 @@
 """Представления (views) приложения projects."""
 
-from django.db.models import Count, Exists, OuterRef
+from django.contrib.auth import get_user_model
+from django.db.models import Count, Exists, OuterRef, Q
+from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -8,7 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import JoinRequest, Project, ProjectMembership
+from .models import JoinRequest, Project, ProjectInvitation, ProjectMembership
 from .permissions import IsProjectMember, IsProjectOwner
 # ROLE_DISABLED: IsProjectAdmin больше не импортируется, используем IsProjectOwner
 from .serializers import (
@@ -422,3 +424,193 @@ class ProjectMyTasksView(APIView):
 
         serializer = TaskSerializer(tasks, many=True)
         return Response(serializer.data)
+
+
+class ProjectStatsView(APIView):
+    """Статистика выполнения задач проекта."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, pk: int) -> Response:
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        perm = IsProjectMember()
+        if not perm.has_object_permission(request, self, project):
+            return Response({'detail': perm.message}, status=status.HTTP_403_FORBIDDEN)
+
+        from tasks.models import Task as TaskModel
+        today = timezone.now().date()
+        qs = TaskModel.objects.filter(project=project)
+
+        total = qs.count()
+        todo = qs.filter(status='todo').count()
+        in_progress = qs.filter(status='in_progress').count()
+        done = qs.filter(status='done').count()
+        overdue = qs.filter(
+            deadline__lt=today,
+        ).exclude(status='done').count()
+        completion_percent = round(done / total * 100) if total else 0
+
+        return Response({
+            'total': total,
+            'todo': todo,
+            'in_progress': in_progress,
+            'done': done,
+            'overdue': overdue,
+            'completion_percent': completion_percent,
+        })
+
+
+class ProjectInviteView(APIView):
+    """Отправка приглашения в проект по email (только владелец)."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request, pk: int) -> Response:
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response(
+                {'detail': 'Проект не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        perm = IsProjectOwner()
+        if not perm.has_object_permission(request, self, project):
+            return Response({'detail': perm.message}, status=status.HTTP_403_FORBIDDEN)
+
+        email = request.data.get('email', '').strip()
+        project_role = request.data.get('project_role', 'developer')
+
+        if not email:
+            return Response(
+                {'detail': 'Email обязателен.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        User = get_user_model()
+        try:
+            receiver = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {'detail': f'Пользователь с email «{email}» не найден.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if receiver == request.user:
+            return Response(
+                {'detail': 'Нельзя пригласить себя.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if ProjectMembership.objects.filter(user=receiver, project=project).exists():
+            return Response(
+                {'detail': 'Пользователь уже является участником проекта.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        invitation, created = ProjectInvitation.objects.get_or_create(
+            project=project,
+            receiver=receiver,
+            defaults={'sender': request.user, 'project_role': project_role},
+        )
+        if not created:
+            if invitation.status == 'pending':
+                return Response(
+                    {'detail': 'Приглашение уже отправлено.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Переотправка после отклонения
+            invitation.status = 'pending'
+            invitation.sender = request.user
+            invitation.project_role = project_role
+            invitation.save()
+
+        from notifications.services import create_notification
+        create_notification(
+            recipient=receiver,
+            notification_type='project_invitation',
+            title=f'Приглашение в проект «{project.title}»',
+            message=(
+                f'{request.user.full_name} приглашает вас принять участие '
+                f'в проекте «{project.title}» в роли {project_role}.'
+            ),
+            project=project,
+            invitation=invitation,
+        )
+
+        return Response(
+            {'detail': 'Приглашение отправлено.'},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class InvitationAcceptView(APIView):
+    """Принятие приглашения получателем."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request, invitation_id: int) -> Response:
+        try:
+            invitation = ProjectInvitation.objects.select_related(
+                'project', 'receiver',
+            ).get(pk=invitation_id)
+        except ProjectInvitation.DoesNotExist:
+            return Response(
+                {'detail': 'Приглашение не найдено.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if invitation.receiver != request.user:
+            return Response(
+                {'detail': 'Вы не являетесь получателем этого приглашения.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if invitation.status != 'pending':
+            return Response(
+                {'detail': 'Приглашение уже обработано.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ProjectMembership.objects.get_or_create(
+            user=request.user,
+            project=invitation.project,
+            defaults={'project_role': invitation.project_role},
+        )
+        invitation.status = 'accepted'
+        invitation.save()
+
+        return Response({'detail': 'Вы вступили в проект.'})
+
+
+class InvitationDeclineView(APIView):
+    """Отклонение приглашения получателем."""
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request, invitation_id: int) -> Response:
+        try:
+            invitation = ProjectInvitation.objects.get(pk=invitation_id)
+        except ProjectInvitation.DoesNotExist:
+            return Response(
+                {'detail': 'Приглашение не найдено.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if invitation.receiver != request.user:
+            return Response(
+                {'detail': 'Вы не являетесь получателем этого приглашения.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        invitation.status = 'declined'
+        invitation.save()
+
+        return Response({'detail': 'Приглашение отклонено.'})

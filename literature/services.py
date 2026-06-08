@@ -263,6 +263,8 @@ SOURCE_TYPES = [
     'electronic_resource',
     'newspaper_article',
     'dissertation',
+    'gost_standard',
+    'conference_theses',
 ]
 
 
