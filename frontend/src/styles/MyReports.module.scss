@@ -1,0 +1,261 @@
+// MyReports.module.scss
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.loader {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #17323b;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #5f747c;
+  margin: 4px 0 0;
+}
+
+// Вкладки
+.tabsWrapper {
+  border-bottom: 1px solid #e2efeb;
+  margin-bottom: 24px;
+}
+
+.tabs {
+  min-height: 44px !important;
+
+  :global {
+    .MuiTabs-indicator {
+      background-color: #238f76 !important;
+      height: 2px !important;
+    }
+
+    .MuiTab-root {
+      color: #8aa4ac !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      text-transform: none !important;
+      min-height: 44px !important;
+      padding: 10px 18px !important;
+    }
+
+    .Mui-selected {
+      color: #238f76 !important;
+    }
+  }
+}
+
+// Таблица
+.tableContainer {
+  padding: 28px 28px 48px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  overflow: visible !important;
+}
+
+.reportTable {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
+
+  :global {
+    .MuiTableCell-head {
+      padding: 14px 18px !important;
+      background: rgba(31, 139, 117, 0.1) !important;
+      color: #1f8b75 !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      border-bottom: none !important;
+    }
+
+    .MuiTableCell-head:first-of-type {
+      border-radius: 14px 0 0 14px !important;
+    }
+
+    .MuiTableCell-head:last-of-type {
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableCell-body {
+      padding: 18px 20px !important;
+      background: #f8fbf9 !important;
+      color: #5f747c !important;
+      font-size: 15px !important;
+      font-weight: 400 !important;
+      border-top: 1px solid #eef4f2 !important;
+      border-bottom: 1px solid #eef4f2 !important;
+      border-left: none !important;
+      border-right: none !important;
+      transition: background 0.15s ease !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:first-of-type {
+      border-left: 1px solid #eef4f2 !important;
+      border-radius: 14px 0 0 14px !important;
+      color: #17323b !important;
+      font-weight: 500 !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:last-of-type {
+      border-right: 1px solid #eef4f2 !important;
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableRow-root:hover .MuiTableCell-body {
+      background: #f1f8f5 !important;
+    }
+  }
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tableActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.overdueRow {
+  :global {
+    .MuiTableCell-body {
+      background: #fffdf5 !important;
+    }
+  }
+}
+
+.overdueDate {
+  color: #d32f2f !important;
+  font-weight: 500 !important;
+}
+
+// Статусы отчетов
+.reportStatus {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusPending {
+  background-color: #fff8e1;
+  color: #f57c00;
+}
+
+.statusSubmitted {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.statusReviewed {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.statusRejected {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+// Пустое состояние
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.emptyStateIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.emptyStateText {
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+// Переопределение MUI
+.container {
+  :global {
+    .MuiPaper-root {
+      border-radius: 16px;
+    }
+
+    .MuiChip-root {
+      border-radius: 999px !important;
+      font-weight: 500 !important;
+    }
+
+    .MuiIconButton-root {
+      color: #5f747c;
+
+      &:hover {
+        background: rgba(31, 139, 117, 0.08);
+        color: #1f8b75;
+      }
+    }
+
+    .MuiButton-root {
+      border-radius: 12px;
+      text-transform: none;
+      font-weight: 500;
+      box-shadow: none;
+    }
+  }
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reportTable {
+    display: block;
+    overflow-x: auto;
+  }
+}

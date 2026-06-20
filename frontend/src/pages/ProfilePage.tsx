@@ -83,10 +83,6 @@ export default function ProfilePage({
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Профиль</h1>
-        <p className={styles.subtitle}>
-          Информация о текущем пользователе
-        </p>
       </div>
 
       <div className={styles.card}>

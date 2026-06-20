@@ -1,0 +1,191 @@
+// MyRequests.module.scss
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.loader {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #17323b;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #5f747c;
+  margin: 4px 0 0;
+}
+
+// Таблица
+.tableContainer {
+  padding: 28px 28px 48px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  overflow: visible !important;
+}
+
+.requestTable {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
+
+  :global {
+    .MuiTableCell-head {
+      padding: 14px 18px !important;
+      background: rgba(31, 139, 117, 0.1) !important;
+      color: #1f8b75 !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      border-bottom: none !important;
+    }
+
+    .MuiTableCell-head:first-of-type {
+      border-radius: 14px 0 0 14px !important;
+    }
+
+    .MuiTableCell-head:last-of-type {
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableCell-body {
+      padding: 18px 20px !important;
+      background: #f8fbf9 !important;
+      color: #5f747c !important;
+      font-size: 15px !important;
+      font-weight: 400 !important;
+      border-top: 1px solid #eef4f2 !important;
+      border-bottom: 1px solid #eef4f2 !important;
+      border-left: none !important;
+      border-right: none !important;
+      transition: background 0.15s ease !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:first-of-type {
+      border-left: 1px solid #eef4f2 !important;
+      border-radius: 14px 0 0 14px !important;
+      color: #17323b !important;
+      font-weight: 500 !important;
+    }
+
+    .MuiTableRow-root .MuiTableCell-body:last-of-type {
+      border-right: 1px solid #eef4f2 !important;
+      border-radius: 0 14px 14px 0 !important;
+    }
+
+    .MuiTableRow-root:hover .MuiTableCell-body {
+      background: #f1f8f5 !important;
+    }
+  }
+}
+
+// Статусы
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.statusPending {
+  background-color: #b2bec3;
+}
+
+.statusApproved {
+  background-color: #00b894;
+}
+
+.statusRejected {
+  background-color: #d63031;
+}
+
+// Кнопка отзыва
+.cancelButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffebee;
+  color: #f44336;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffcdd2;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Пустое состояние
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.emptyStateIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #17323b;
+}
+
+.emptyStateText {
+  font-size: 14px;
+  color: #5f747c;
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .requestTable {
+    display: block;
+    overflow-x: auto;
+  }
+}

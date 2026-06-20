@@ -149,12 +149,6 @@ export default function PublicationsPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Мои публикации</h1>
-          <p className={styles.subtitle}>
-            Управление списком научных публикаций
-          </p>
-        </div>
       </div>
 
       {error && <div className={styles.error}>{error}</div>}

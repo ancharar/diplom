@@ -1,0 +1,506 @@
+// ProjectJoinRequests.module.scss
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.loader {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5f747c;
+  font-size: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #17323b;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #5f747c;
+  margin: 0;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid #238f76;
+  color: #238f76;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(35, 143, 118, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.filtersWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border: 1px solid #e2efeb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #17323b;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+
+  &:focus {
+    outline: none;
+    border-color: #238f76;
+    box-shadow: 0 0 0 3px rgba(35, 143, 118, 0.08);
+  }
+
+  &:hover {
+    border-color: #238f76;
+  }
+}
+
+.tableWrapper {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 4px 20px 32px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2efeb;
+  overflow-x: auto;
+}
+
+.requestTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  font-size: 14px;
+
+  thead {
+    tr {
+      th {
+        padding: 12px 16px;
+        text-align: left;
+        background: rgba(31, 139, 117, 0.08);
+        color: #1f8b75;
+        font-weight: 600;
+        font-size: 13px;
+        border-bottom: none;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+
+        &:first-child {
+          border-radius: 12px 0 0 12px;
+          padding-left: 20px;
+        }
+
+        &:last-child {
+          border-radius: 0 12px 12px 0;
+          padding-right: 20px;
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      td {
+        padding: 14px 16px;
+        background: #f8fbf9;
+        color: #5f747c;
+        border: none;
+        transition: background 0.2s ease;
+        vertical-align: middle;
+        font-size: 14px;
+
+        &:first-child {
+          border-radius: 12px 0 0 12px;
+          padding-left: 20px;
+        }
+
+        &:last-child {
+          border-radius: 0 12px 12px 0;
+          padding-right: 20px;
+        }
+      }
+
+      &:hover td {
+        background: #f1f8f5;
+      }
+    }
+  }
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-weight: 600;
+  color: #17323b;
+  font-size: 14px;
+}
+
+.userEmail {
+  font-size: 12px;
+  color: #8aa4ac;
+}
+
+.roleText {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(31, 139, 117, 0.08);
+  color: #1f8b75;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.messageText {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  color: #8aa4ac;
+  font-size: 13px;
+}
+
+.dateText {
+  color: #8aa4ac;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.statusPending {
+  background: linear-gradient(135deg, #f57c00, #e65100);
+}
+
+.statusApproved {
+  background: linear-gradient(135deg, #00b894, #00a381);
+}
+
+.statusRejected {
+  background: linear-gradient(135deg, #d63031, #c0392b);
+}
+
+.statusApprovedText {
+  color: #00b894;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.statusRejectedText {
+  color: #d63031;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.actionsWrapper {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.approveBtn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #e8f5e9;
+  color: #00b894;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #00b894;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.97);
+  }
+}
+
+.rejectBtn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #ffebee;
+  color: #d63031;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #d63031;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(214, 48, 49, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.97);
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  border: 2px dashed #c8ddd8;
+  border-radius: 20px;
+  background: #f8fbf9;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #17323b;
+}
+
+.emptyStateText {
+  font-size: 14px;
+  color: #8aa4ac;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 24px 20px;
+  }
+
+  .requestTable {
+    font-size: 13px;
+  }
+
+  .tableWrapper {
+    padding: 4px 16px 24px 16px;
+  }
+
+  .messageText {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .headerLeft {
+    align-items: flex-start;
+  }
+
+  .backButton {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filtersWrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterSelect {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .tableWrapper {
+    padding: 4px 12px 20px 12px;
+    border-radius: 16px;
+  }
+
+  .requestTable {
+    font-size: 13px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+
+    thead tr th,
+    tbody tr td {
+      padding: 10px 12px;
+    }
+
+    thead tr th:first-child,
+    tbody tr td:first-child {
+      padding-left: 14px;
+    }
+
+    thead tr th:last-child,
+    tbody tr td:last-child {
+      padding-right: 14px;
+    }
+  }
+
+  .actionsWrapper {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .approveBtn,
+  .rejectBtn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .userName {
+    font-size: 13px;
+  }
+
+  .userEmail {
+    font-size: 11px;
+  }
+
+  .messageText {
+    max-width: 100px;
+  }
+
+  .roleText {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 16px 12px;
+  }
+
+  .requestTable {
+    font-size: 12px;
+
+    thead tr th,
+    tbody tr td {
+      padding: 8px 10px;
+    }
+
+    thead tr th:first-child,
+    tbody tr td:first-child {
+      padding-left: 10px;
+    }
+
+    thead tr th:last-child,
+    tbody tr td:last-child {
+      padding-right: 10px;
+    }
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .statusBadge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .approveBtn,
+  .rejectBtn {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .userName {
+    font-size: 12px;
+  }
+
+  .userEmail {
+    font-size: 10px;
+  }
+
+  .messageText {
+    max-width: 80px;
+  }
+
+  .dateText {
+    font-size: 11px;
+  }
+
+  .tableWrapper {
+    padding: 4px 8px 16px 8px;
+    border-radius: 12px;
+  }
+}

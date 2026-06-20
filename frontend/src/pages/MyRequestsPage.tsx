@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+} from '@mui/material';
 import client from '../api/client';
-import Loader from '../components/Loader';
 import type { JoinRequest } from '../types';
+import styles from '../styles/MyRequests.module.scss';
 
 const ROLE_LABELS: Record<string, string> = {
   analyst: 'Аналитик',
@@ -17,10 +27,10 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Отклонена',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#b2bec3',
-  approved: '#00b894',
-  rejected: '#d63031',
+const STATUS_CLASSES: Record<string, string> = {
+  pending: styles.statusPending,
+  approved: styles.statusApproved,
+  rejected: styles.statusRejected,
 };
 
 export default function MyRequestsPage() {
@@ -46,52 +56,68 @@ export default function MyRequestsPage() {
     } catch { /* ignore */ }
   };
 
-  if (loading) return <Loader />;
+  if (loading) {
+    return (
+      <div className={styles.loader}>
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
-    <div className="container">
-      <h1 className="page-title">Мои заявки</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>Проект</th>
-            <th>Желаемая роль</th>
-            <th>Статус</th>
-            <th>Дата подачи</th>
-            <th>Рассмотрел</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.map((r) => (
-            <tr key={r.id}>
-              <td>Проект #{r.project}</td>
-              <td>{ROLE_LABELS[r.desired_role] || r.desired_role}</td>
-              <td>
-                <span style={{
-                  background: STATUS_COLORS[r.status] || '#b2bec3',
-                  color: '#fff',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                }}>
-                  {STATUS_LABELS[r.status] || r.status}
-                </span>
-               </td>
-              <td>{new Date(r.created_at).toLocaleDateString()}</td>
-              <td>{r.reviewed_by?.full_name || '—'}</td>
-              <td>
-                {r.status === 'pending' && (
-                  <button className="btn btn-sm" onClick={() => handleCancel(r.id)}>Отозвать</button>
-                )}
-               </td>
-             </tr>
-          ))}
-          {requests.length === 0 && (
-            <tr><td colSpan={6} style={{ textAlign: 'center' }}>Нет заявок</td></tr>
-          )}
-        </tbody>
-      </table>
+    <div className={styles.container}>
+      <div className={styles.header}>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyStateIcon}>📋</div>
+          <div className={styles.emptyStateTitle}>Нет заявок</div>
+          <div className={styles.emptyStateText}>
+            Вы пока не подавали заявок на участие в проектах
+          </div>
+        </div>
+      ) : (
+        <TableContainer component={Paper} className={styles.tableContainer}>
+          <Table className={styles.requestTable}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Проект</TableCell>
+                <TableCell>Желаемая роль</TableCell>
+                <TableCell>Статус</TableCell>
+                <TableCell>Дата подачи</TableCell>
+                <TableCell>Рассмотрел</TableCell>
+                <TableCell>Действия</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {requests.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>Проект #{r.project}</TableCell>
+                  <TableCell>{ROLE_LABELS[r.desired_role] || r.desired_role}</TableCell>
+                  <TableCell>
+                    <span className={`${styles.statusBadge} ${STATUS_CLASSES[r.status] || styles.statusPending}`}>
+                      {STATUS_LABELS[r.status] || r.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>{new Date(r.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell>{r.reviewed_by?.full_name || '—'}</TableCell>
+                  <TableCell>
+                    {r.status === 'pending' && (
+                      <button 
+                        className={styles.cancelButton} 
+                        onClick={() => handleCancel(r.id)}
+                      >
+                        Отозвать
+                      </button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </div>
   );
 }

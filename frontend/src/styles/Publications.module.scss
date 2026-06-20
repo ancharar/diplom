@@ -60,6 +60,11 @@
       border-color: #238f76;
     }
   }
+
+  button {
+    border-radius: 12px !important;
+    padding: 10px 24px;
+  }
 }
 
 .confidenceBadge {
@@ -115,6 +120,11 @@
   display: flex;
   gap: 8px;
   margin-top: 16px;
+
+  button {
+    border-radius: 12px !important;
+    padding: 10px 24px;
+  }
 }
 
 .pubList {
@@ -263,6 +273,11 @@
   textarea {
     min-height: 60px;
     resize: vertical;
+  }
+
+  button {
+    border-radius: 12px !important;
+    padding: 10px 24px;
   }
 }
 

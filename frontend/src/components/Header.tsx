@@ -17,11 +17,14 @@ export default function Header({ user }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isMounted = useRef(true);
 
   const fetchUnreadCount = async () => {
     try {
       const { data } = await client.get<Notification[]>('/notifications/?unread=true');
-      setUnreadCount(data.length);
+      if (isMounted.current) {
+        setUnreadCount(data.length);
+      }
     } catch {
       // silent
     }
@@ -30,17 +33,35 @@ export default function Header({ user }: HeaderProps) {
   const fetchNotifications = async () => {
     try {
       const { data } = await client.get<Notification[]>('/notifications/');
-      setNotifications(data.slice(0, 20));
+      if (isMounted.current) {
+        setNotifications(data.slice(0, 20));
+      }
     } catch {
       // silent
     }
   };
 
   useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user) return;
-    fetchUnreadCount();
+
+    const loadInitialCount = async () => {
+      await fetchUnreadCount();
+    };
+    loadInitialCount();
+
     const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -62,30 +83,38 @@ export default function Header({ user }: HeaderProps) {
 
   const handleReadAll = async () => {
     await client.post('/notifications/read-all/');
-    setUnreadCount(0);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    if (isMounted.current) {
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    }
   };
 
   const handleRead = async (id: number) => {
     await client.post(`/notifications/${id}/read/`);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-    );
-    setUnreadCount((c) => Math.max(0, c - 1));
+    if (isMounted.current) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
   };
 
   const handleAccept = async (n: Notification) => {
     if (!n.invitation) return;
     await client.post(`/projects/invitations/${n.invitation.id}/accept/`);
     await handleRead(n.id);
-    setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    if (isMounted.current) {
+      setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    }
   };
 
   const handleDecline = async (n: Notification) => {
     if (!n.invitation) return;
     await client.post(`/projects/invitations/${n.invitation.id}/decline/`);
     await handleRead(n.id);
-    setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    if (isMounted.current) {
+      setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    }
   };
 
   if (!user) return null;
@@ -100,8 +129,14 @@ export default function Header({ user }: HeaderProps) {
     if (location.pathname.includes('/literature')) {
       return { title: 'Литература', description: 'Управление литературными источниками проекта' };
     }
+    if (location.pathname.startsWith('/my-reports')) {
+      return { title: 'Мои отчеты', description: 'Загружайте и отслеживайте статус ваших научных отчетов' };
+    }
     if (location.pathname.includes('/reports')) {
       return { title: 'Отчеты', description: 'Управление отчетностью по проекту' };
+    }
+    if (location.pathname.includes('/join-requests')) {
+      return { title: 'Заявки на вступление', description: 'Управление заявками пользователей на участие в проекте' };
     }
     if (location.pathname.startsWith('/projects/')) {
       return { title: 'Детали проекта', description: 'Просмотр информации, участников, задач и материалов проекта' };
@@ -110,10 +145,13 @@ export default function Header({ user }: HeaderProps) {
       return { title: 'Задача', description: 'Просмотр и управление задачей проекта' };
     }
     if (location.pathname.startsWith('/my-requests')) {
-      return { title: 'Заявки', description: 'Отслеживание ваших заявок на участие в проектах' };
+      return { title: 'Мои заявки', description: 'Отслеживание ваших заявок на участие в проектах' };
     }
     if (location.pathname.startsWith('/profile')) {
-      return { title: 'Моя анкета', description: 'Личные данные, интересы и информация исследователя' };
+      return { title: 'Профиль', description: 'Информация о текущем пользователе' };
+    }
+    if (location.pathname.startsWith('/publications')) {
+      return { title: 'Мои публикации', description: 'Управление списком моих научных публикаций' };
     }
     return { title: 'ScienceFlow', description: 'Платформа для совместной научной работы' };
   };

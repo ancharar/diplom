@@ -21,7 +21,7 @@ import {
 import { reportApi } from '../api/reportsApi';
 import { useToast } from '../contexts/ToastContext';
 import type { Report } from '../types';
-import styles from '../styles/Reports.module.scss';
+import styles from '../styles/MyReports.module.scss';
 
 export default function MyReportsPage() {
   const { showSuccess, showError } = useToast();
@@ -125,7 +125,7 @@ export default function MyReportsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div className={styles.loader}>
         <CircularProgress />
       </div>
     );
@@ -142,14 +142,14 @@ export default function MyReportsPage() {
       />
 
       <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Мои отчеты</h1>
-          <p className={styles.subtitle}>Загрузите заполненный отчет в формате .docx</p>
-        </div>
       </div>
 
-      <div style={{ borderBottom: '1px solid #e0e0e0', marginBottom: 16 }}>
-        <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)}>
+      <div className={styles.tabsWrapper}>
+        <Tabs 
+          className={styles.tabs}
+          value={tabValue} 
+          onChange={(_, v) => setTabValue(v)}
+        >
           <Tab label="Требуют заполнения" />
           <Tab label="На проверке" />
           <Tab label="Проверены" />
@@ -161,8 +161,8 @@ export default function MyReportsPage() {
           Нет отчетов в этом разделе
         </Alert>
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} className={styles.tableContainer}>
+          <Table className={styles.reportTable}>
             <TableHead>
               <TableRow>
                 <TableCell>Отчет</TableCell>
